@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Public Sans', sans-serif;
+}
+
+.step-panel {
+  display: none;
+}
+
+.step-panel.active {
+  display: block;
+}
+
+/* Custom scrollbar for console log */
+.console-log {
+  scrollbar-width: thin;
+  scrollbar-color: #475569 #1e293b;
+}
+
+.console-log::-webkit-scrollbar {
+  width: 6px;
+}
+
+.console-log::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 3px;
+}
+
+.console-log::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
+}
+
+.console-log::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
