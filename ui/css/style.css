@@ -16,26 +16,59 @@ body {
   display: block;
 }
 
-/* Custom scrollbar for console log */
+/* -- Console sidebar scrollbar (dark glassmorphism) -- */
 .console-log {
   scrollbar-width: thin;
-  scrollbar-color: #475569 #1e293b;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
 }
-
 .console-log::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
-
 .console-log::-webkit-scrollbar-track {
-  background: #1e293b;
-  border-radius: 3px;
+  background: transparent;
 }
-
 .console-log::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-radius: 3px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 9999px;
+}
+.console-log::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.15);
 }
 
-.console-log::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+/* -- Console sidebar slide transition -- */
+#console-sidebar {
+  transition: width 280ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 200ms ease;
+}
+#console-sidebar.collapsed {
+  width: 0 !important;
+  opacity: 0;
+  overflow: hidden;
+  border-left-width: 0;
+}
+
+/* -- Log entry fade-in -- */
+.log-entry {
+  animation: logFadeIn 300ms ease-out;
+}
+@keyframes logFadeIn {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* -- Pulse dot for live indicator -- */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* -- Material Symbols sizing helper -- */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
