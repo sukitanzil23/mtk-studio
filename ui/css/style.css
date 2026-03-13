@@ -8,12 +8,35 @@ body {
   font-family: 'Public Sans', sans-serif;
 }
 
+/* ================================================================
+   Global: Hide scrollbars but keep scroll functional
+   ================================================================ */
+
+/* Webkit (Chrome, Safari, Edge, Electron) */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Firefox */
+html {
+  scrollbar-width: none;
+}
+
+/* IE/Edge legacy */
+body {
+  -ms-overflow-style: none;
+}
+
 .step-panel {
   display: none;
 }
 
 .step-panel.active {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0;
 }
 
 /* ================================================================
@@ -21,8 +44,6 @@ body {
    ================================================================ */
 
 #console-sidebar {
-  /* FIX: removed position:fixed -- sidebar stays in flex flow
-     so it PUSHES content instead of overlapping it */
   width: 320px;
   z-index: 40;
   background: rgba(15, 23, 42, 0.92);
@@ -42,6 +63,7 @@ body {
   border-left-color: transparent;
 }
 
+/* Console log -- thin scrollbar (only place that scrolls) */
 #console-log {
   scrollbar-width: thin;
   scrollbar-color: #475569 transparent;
@@ -70,25 +92,37 @@ body {
   font-variation-settings: 'FILL' 0, 'wght' 400;
 }
 
-.console-log {
+/* Operation log inside step 4 -- also allow scroll with thin bar */
+#operation-log {
   scrollbar-width: thin;
-  scrollbar-color: #475569 #1e293b;
+  scrollbar-color: #cbd5e1 transparent;
 }
 
-.console-log::-webkit-scrollbar {
-  width: 6px;
+#operation-log::-webkit-scrollbar {
+  width: 4px;
 }
 
-.console-log::-webkit-scrollbar-track {
-  background: #1e293b;
-  border-radius: 3px;
+#operation-log::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.console-log::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-radius: 3px;
+#operation-log::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
 }
 
-.console-log::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+/* ================================================================
+   FRP page: fill available height, no main scroll
+   ================================================================ */
+
+#page-content {
+  display: flex;
+  flex-direction: column;
+}
+
+#frp-page-root {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0;
 }
