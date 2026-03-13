@@ -157,14 +157,14 @@
         <h3 class="font-bold uppercase text-xs tracking-widest text-slate-700">Device Hardware Information</h3>
       </div>
       <div class="p-6 flex-1">
-        <div class="grid grid-cols-2 gap-x-10 gap-y-4">
+        <div class="grid grid-cols-3 gap-x-6 gap-y-4">
           <div>
             <p class="text-xs text-slate-500 uppercase font-bold tracking-tight">Chipset</p>
             <p id="device-chipset" class="text-sm font-semibold mt-1">Detecting...</p>
           </div>
           <div>
-            <p class="text-xs text-slate-500 uppercase font-bold tracking-tight">Description</p>
-            <p id="device-description" class="text-sm font-semibold mt-1">--</p>
+            <p class="text-xs text-slate-500 uppercase font-bold tracking-tight">Marketing</p>
+            <p id="device-marketing" class="text-sm font-semibold mt-1">--</p>
           </div>
           <div>
             <p class="text-xs text-slate-500 uppercase font-bold tracking-tight">HW Code</p>
@@ -177,10 +177,14 @@
               <p id="device-boot-mode" class="text-sm font-semibold">--</p>
             </div>
           </div>
-          <div class="col-span-2">
-            <p class="text-xs text-slate-500 uppercase font-bold tracking-tight">Security Status</p>
+          <div>
+            <p class="text-xs text-slate-500 uppercase font-bold tracking-tight">Exploit</p>
+            <p id="device-exploit" class="text-sm font-semibold mt-1">--</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 uppercase font-bold tracking-tight">Support Status</p>
             <div class="mt-1">
-              <span id="device-security" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-xs font-bold uppercase">
+              <span id="device-status" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-500 rounded text-xs font-bold uppercase">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                 Analyzing...
               </span>
@@ -189,16 +193,59 @@
         </div>
       </div>
 
-      <!-- CTA -->
+      <!-- Operation Selector -->
       <div class="px-6 pb-6 flex-shrink-0">
+        <p class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Choose Operation</p>
+        <div class="grid grid-cols-3 gap-2.5 mb-4">
+
+          <!-- FRP Bypass Only -->
+          <button onclick="selectOperation('frp')" id="op-frp"
+                  class="op-card op-selected group relative flex flex-col items-center text-center p-3.5 pt-5 rounded-xl border-2 border-blue-500 bg-blue-50/60 cursor-pointer transition-all hover:shadow-md">
+            <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mb-2 transition-colors group-hover:bg-blue-200">
+              <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+            </div>
+            <p class="text-xs font-bold text-slate-900 leading-tight">FRP Bypass</p>
+            <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">Erase FRP &amp; persist only</p>
+            <div class="absolute top-2 right-2 w-3.5 h-3.5 rounded-full border-2 border-blue-500 bg-blue-500 flex items-center justify-center op-radio">
+              <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+            </div>
+          </button>
+
+          <!-- Factory Reset + FRP -->
+          <button onclick="selectOperation('factory')" id="op-factory"
+                  class="op-card group relative flex flex-col items-center text-center p-3.5 pt-5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer transition-all hover:shadow-md hover:border-slate-300">
+            <span class="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200 whitespace-nowrap">Destructive</span>
+            <div class="w-9 h-9 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center mb-2 transition-colors group-hover:bg-amber-50 group-hover:text-amber-600">
+              <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </div>
+            <p class="text-xs font-bold text-slate-900 leading-tight">Factory Reset</p>
+            <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">Full wipe + erase FRP</p>
+            <div class="absolute top-2 right-2 w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white flex items-center justify-center op-radio"></div>
+          </button>
+
+          <!-- Read Partitions -->
+          <button onclick="selectOperation('read')" id="op-read"
+                  class="op-card group relative flex flex-col items-center text-center p-3.5 pt-5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer transition-all hover:shadow-md hover:border-slate-300">
+            <span class="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 whitespace-nowrap">Safe</span>
+            <div class="w-9 h-9 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center mb-2 transition-colors group-hover:bg-emerald-50 group-hover:text-emerald-600">
+              <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            </div>
+            <p class="text-xs font-bold text-slate-900 leading-tight">Read Partitions</p>
+            <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">View partition table</p>
+            <div class="absolute top-2 right-2 w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white flex items-center justify-center op-radio"></div>
+          </button>
+
+        </div>
+
+        <!-- Action Buttons -->
         <div class="flex gap-3">
-          <button id="btn-remove-frp" onclick="startFrpRemoval()"
-                  class="flex-1 h-[52px] bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:opacity-90 text-white rounded-xl font-bold text-base flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
-            Remove FRP Lock
+          <button id="btn-start-op" onclick="startSelectedOperation()"
+                  class="flex-1 h-[48px] bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:opacity-90 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
+            <svg id="btn-start-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+            <span id="btn-start-text">Remove FRP Lock</span>
           </button>
           <button onclick="cancelBypass()"
-                  class="px-5 h-[52px] bg-white text-slate-700 rounded-xl font-bold text-sm border border-slate-200 hover:bg-slate-50 transition-colors">
+                  class="px-5 h-[48px] bg-white text-slate-700 rounded-xl font-bold text-sm border border-slate-200 hover:bg-slate-50 transition-colors">
             Cancel
           </button>
         </div>
@@ -216,9 +263,9 @@
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
         </svg>
-        <h3 class="font-bold text-base text-slate-900">FRP Bypass in Progress</h3>
+        <h3 id="step4-title" class="font-bold text-base text-slate-900">FRP Bypass in Progress</h3>
       </div>
-      <p class="text-sm text-slate-500 mb-4 ml-8 flex-shrink-0">Wait for the operation to complete</p>
+      <p id="step4-subtitle" class="text-sm text-slate-500 mb-4 ml-8 flex-shrink-0">Wait for the operation to complete</p>
 
       <!-- Progress Bar -->
       <div class="mb-4 flex-shrink-0">
@@ -268,8 +315,8 @@
         </div>
       </div>
 
-      <h3 class="text-xl font-black text-slate-900 mb-1.5">FRP Bypass Complete!</h3>
-      <p class="text-slate-500 text-sm mb-6">Your device is now free from FRP verification lock</p>
+      <h3 id="done-title" class="text-xl font-black text-slate-900 mb-1.5">FRP Bypass Complete!</h3>
+      <p id="done-subtitle" class="text-slate-500 text-sm mb-6">Your device is now free from FRP verification lock</p>
 
       <!-- Summary Card -->
       <div class="bg-slate-50 rounded-xl border border-slate-200 p-5 max-w-sm w-full mb-6 text-left">
@@ -281,7 +328,7 @@
           <div class="h-px bg-slate-200"></div>
           <div class="flex justify-between items-center">
             <span class="text-xs text-slate-500 uppercase font-bold tracking-tight">Operation</span>
-            <span class="text-sm font-semibold text-slate-900">FRP Partition Erased</span>
+            <span id="done-operation" class="text-sm font-semibold text-slate-900">FRP Partition Erased</span>
           </div>
           <div class="h-px bg-slate-200"></div>
           <div class="flex justify-between items-center">
@@ -290,6 +337,34 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
               Success
             </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Partition Table (shown only for Read Partitions operation) -->
+      <div id="partition-table-container" class="hidden w-full max-w-lg mb-6">
+        <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+              </svg>
+              GPT Partition Table
+            </h4>
+            <span id="partition-count" class="text-xs font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">0 partitions</span>
+          </div>
+          <div class="max-h-[240px] overflow-y-auto">
+            <table class="w-full text-xs">
+              <thead class="bg-slate-100 sticky top-0">
+                <tr>
+                  <th class="text-left px-4 py-2 font-bold text-slate-600 uppercase tracking-wider">Name</th>
+                  <th class="text-right px-4 py-2 font-bold text-slate-600 uppercase tracking-wider">Sector</th>
+                  <th class="text-right px-4 py-2 font-bold text-slate-600 uppercase tracking-wider">Size</th>
+                </tr>
+              </thead>
+              <tbody id="partition-table-body" class="divide-y divide-slate-100">
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -329,6 +404,152 @@ function startBypass() {
   }
 }
 
+// --- Operation Selection State ---
+var _selectedOp = 'frp';
+
+var OP_CONFIG = {
+  frp: {
+    btnText: 'Remove FRP Lock',
+    btnIcon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>',
+    step4Title: 'FRP Bypass in Progress',
+    step4Sub: 'Erasing FRP and persist partitions',
+    step5Title: 'FRP Bypass Complete!',
+    step5Sub: 'Your device is now free from FRP verification lock',
+    step5Op: 'FRP Partition Erased',
+    footerStatus: 'FRP Bypass In Progress',
+    cardBorder: 'border-blue-500',
+    cardBg: 'bg-blue-50/60',
+    iconBg: 'bg-blue-100',
+    iconColor: 'text-blue-600',
+    radioBorder: 'border-blue-500',
+    radioBg: 'bg-blue-500'
+  },
+  factory: {
+    btnText: 'Factory Reset + Remove FRP',
+    btnIcon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>',
+    step4Title: 'Factory Reset in Progress',
+    step4Sub: 'Erasing userdata, FRP and persist partitions',
+    step5Title: 'Factory Reset Complete!',
+    step5Sub: 'Device wiped and FRP lock removed',
+    step5Op: 'Factory Reset + FRP Erased',
+    footerStatus: 'Factory Reset In Progress',
+    cardBorder: 'border-amber-500',
+    cardBg: 'bg-amber-50/60',
+    iconBg: 'bg-amber-100',
+    iconColor: 'text-amber-600',
+    radioBorder: 'border-amber-500',
+    radioBg: 'bg-amber-500'
+  },
+  read: {
+    btnText: 'Read Partition Table',
+    btnIcon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>',
+    step4Title: 'Reading Partitions',
+    step4Sub: 'Fetching partition table from device',
+    step5Title: 'Partition Read Complete!',
+    step5Sub: 'Partition table retrieved successfully',
+    step5Op: 'Partition Table Read',
+    footerStatus: 'Reading Partitions',
+    cardBorder: 'border-emerald-500',
+    cardBg: 'bg-emerald-50/60',
+    iconBg: 'bg-emerald-100',
+    iconColor: 'text-emerald-600',
+    radioBorder: 'border-emerald-500',
+    radioBg: 'bg-emerald-500'
+  }
+};
+
+function selectOperation(op) {
+  _selectedOp = op;
+  var cfg = OP_CONFIG[op];
+  if (!cfg) return;
+
+  // Reset all cards
+  ['frp', 'factory', 'read'].forEach(function(key) {
+    var card = document.getElementById('op-' + key);
+    if (!card) return;
+    card.classList.remove('op-selected');
+    card.className = card.className
+      .replace(/border-blue-500|border-amber-500|border-emerald-500/g, 'border-slate-200')
+      .replace(/bg-blue-50\/60|bg-amber-50\/60|bg-emerald-50\/60/g, 'bg-white');
+    // Reset icon container
+    var iconDiv = card.querySelector('.w-9');
+    if (iconDiv) {
+      iconDiv.className = iconDiv.className
+        .replace(/bg-blue-100|bg-amber-100|bg-emerald-100/g, 'bg-slate-100')
+        .replace(/text-blue-600|text-amber-600|text-emerald-600/g, 'text-slate-500');
+    }
+    // Reset radio
+    var radio = card.querySelector('.op-radio');
+    if (radio) {
+      radio.className = 'absolute top-2 right-2 w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white flex items-center justify-center op-radio';
+      radio.innerHTML = '';
+    }
+  });
+
+  // Activate selected card
+  var activeCard = document.getElementById('op-' + op);
+  if (activeCard) {
+    activeCard.classList.add('op-selected');
+    activeCard.className = activeCard.className
+      .replace('border-slate-200', cfg.cardBorder)
+      .replace('bg-white', cfg.cardBg);
+    var iconDiv = activeCard.querySelector('.w-9');
+    if (iconDiv) {
+      iconDiv.className = iconDiv.className
+        .replace('bg-slate-100', cfg.iconBg)
+        .replace('text-slate-500', cfg.iconColor);
+    }
+    var radio = activeCard.querySelector('.op-radio');
+    if (radio) {
+      radio.className = 'absolute top-2 right-2 w-3.5 h-3.5 rounded-full border-2 ' + cfg.radioBorder + ' ' + cfg.radioBg + ' flex items-center justify-center op-radio';
+      radio.innerHTML = '<div class="w-1.5 h-1.5 rounded-full bg-white"></div>';
+    }
+  }
+
+  // Update start button text and icon
+  var btnText = document.getElementById('btn-start-text');
+  var btnIcon = document.getElementById('btn-start-icon');
+  if (btnText) btnText.textContent = cfg.btnText;
+  if (btnIcon) btnIcon.innerHTML = cfg.btnIcon;
+
+  // Update gradient color for factory (amber) and read (emerald)
+  var startBtn = document.getElementById('btn-start-op');
+  if (startBtn) {
+    startBtn.className = startBtn.className
+      .replace(/from-\[#[A-Fa-f0-9]+\]/g, op === 'factory' ? 'from-[#F59E0B]' : op === 'read' ? 'from-[#10B981]' : 'from-[#3B82F6]')
+      .replace(/to-\[#[A-Fa-f0-9]+\]/g, op === 'factory' ? 'to-[#D97706]' : op === 'read' ? 'to-[#059669]' : 'to-[#2563EB]')
+      .replace(/shadow-\[0_4px_14px_rgba\([^)]+\)\]/g, op === 'factory' ? 'shadow-[0_4px_14px_rgba(245,158,11,0.4)]' : op === 'read' ? 'shadow-[0_4px_14px_rgba(16,185,129,0.4)]' : 'shadow-[0_4px_14px_rgba(59,130,246,0.4)]');
+  }
+}
+
+function startSelectedOperation() {
+  var cfg = OP_CONFIG[_selectedOp];
+  if (!cfg) return;
+
+  // Update Step 4 dynamic text
+  var s4t = document.getElementById('step4-title');
+  var s4s = document.getElementById('step4-subtitle');
+  if (s4t) s4t.textContent = cfg.step4Title;
+  if (s4s) s4s.textContent = cfg.step4Sub;
+
+  // Update Step 5 dynamic text
+  var s5t = document.getElementById('done-title');
+  var s5s = document.getElementById('done-subtitle');
+  var s5o = document.getElementById('done-operation');
+  if (s5t) s5t.textContent = cfg.step5Title;
+  if (s5s) s5s.textContent = cfg.step5Sub;
+  if (s5o) s5o.textContent = cfg.step5Op;
+
+  // Dispatch to correct bridge method
+  if (_selectedOp === 'frp') {
+    startFrpRemoval();
+  } else if (_selectedOp === 'factory') {
+    startFactoryReset();
+  } else if (_selectedOp === 'read') {
+    startReadPartitions();
+  }
+}
+
 function startFrpRemoval() {
   if (window.Bridge) {
     Bridge.startFrpBypass().then(function(result) {
@@ -338,7 +559,31 @@ function startFrpRemoval() {
     });
   }
   Stepper.goToStep(4);
-  updateFooterStatus('Bypass In Progress');
+  updateFooterStatus('FRP Bypass In Progress');
+}
+
+function startFactoryReset() {
+  if (window.Bridge) {
+    Bridge.startFactoryResetFrp().then(function(result) {
+      if (result && result.error) {
+        window.showToast('error', result.error);
+      }
+    });
+  }
+  Stepper.goToStep(4);
+  updateFooterStatus('Factory Reset In Progress');
+}
+
+function startReadPartitions() {
+  if (window.Bridge) {
+    Bridge.readPartitions().then(function(result) {
+      if (result && result.error) {
+        window.showToast('error', result.error);
+      }
+    });
+  }
+  Stepper.goToStep(4);
+  updateFooterStatus('Reading Partitions');
 }
 
 function cancelBypass() {
@@ -372,10 +617,15 @@ function resetWizard() {
   });
   var el = function(id) { return document.getElementById(id); };
   if (el('device-chipset')) el('device-chipset').textContent = 'Detecting...';
-  if (el('device-description')) el('device-description').textContent = '--';
+  if (el('device-marketing')) el('device-marketing').textContent = '--';
   if (el('device-hwcode')) el('device-hwcode').textContent = '--';
   if (el('device-boot-mode')) el('device-boot-mode').textContent = '--';
-  if (el('device-security')) el('device-security').textContent = 'Analyzing...';
+  if (el('device-exploit')) el('device-exploit').textContent = '--';
+  if (el('device-status')) { el('device-status').className = 'inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-500 rounded text-xs font-bold uppercase'; el('device-status').innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg> Analyzing...'; }
+  var startBtn = document.getElementById('start-operation-btn');
+  if (startBtn) { startBtn.disabled = false; startBtn.classList.remove('opacity-40', 'cursor-not-allowed'); }
+  // Reset operation selector to FRP default
+  selectOperation('frp');
   updateFooterStatus('Ready');
 }
 
@@ -392,11 +642,38 @@ window.addEventListener('deviceDetected', function(e) {
   var info = e.detail;
   var el = function(id) { return document.getElementById(id); };
   if (el('device-chipset')) el('device-chipset').textContent = info.chipset || '--';
-  if (el('device-description')) el('device-description').textContent = info.description || '--';
+  if (el('device-marketing')) el('device-marketing').textContent = info.marketing || '--';
   if (el('device-hwcode')) el('device-hwcode').textContent = info.hwcode || '--';
   if (el('device-boot-mode')) el('device-boot-mode').textContent = info.is_brom ? 'BROM Mode' : 'Preloader';
-  if (el('device-security')) el('device-security').textContent = info.security || 'Unknown';
-  if (el('done-device')) el('done-device').textContent = (info.chipset || '?') + ' (' + (info.description || '?') + ')';
+  if (el('device-exploit')) el('device-exploit').textContent = info.exploit || 'none';
+
+  // Color-coded support status badge
+  var statusEl = el('device-status');
+  if (statusEl) {
+    var s = info.status || 'UNKNOWN';
+    var label = s;
+    var cls = 'bg-slate-100 text-slate-500';
+    if (s === 'SUPPORTED') { label = 'Supported'; cls = 'bg-emerald-50 text-emerald-700'; }
+    else if (s === 'PARTIAL') { label = 'Partial Support'; cls = 'bg-amber-50 text-amber-700'; }
+    else if (s === 'AUTH_REQUIRED') { label = 'Auth Required'; cls = 'bg-red-50 text-red-600'; }
+    else { label = 'Unknown'; cls = 'bg-slate-100 text-slate-500'; }
+    statusEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold uppercase ' + cls;
+    statusEl.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg> ' + label;
+  }
+
+  // Warning toast + disable operations if auth required
+  if (info.status === 'AUTH_REQUIRED') {
+    if (window.showToast) window.showToast('error', 'This chipset has a patched BootROM and requires signed authentication. Operations may fail.');
+    var startBtn = document.getElementById('start-operation-btn');
+    if (startBtn) { startBtn.disabled = true; startBtn.classList.add('opacity-40', 'cursor-not-allowed'); }
+  } else {
+    var startBtn = document.getElementById('start-operation-btn');
+    if (startBtn) { startBtn.disabled = false; startBtn.classList.remove('opacity-40', 'cursor-not-allowed'); }
+  }
+
+  // Update done screen summary
+  var mkt = info.marketing ? ' (' + info.marketing + ')' : '';
+  if (el('done-device')) el('done-device').textContent = (info.chipset || '?') + mkt;
 });
 
 window.updateStatus = function(status) {
@@ -477,12 +754,55 @@ window.initStepper = initStepper;
 window.startBypass = startBypass;
 window.cancelBypass = cancelBypass;
 window.startFrpRemoval = startFrpRemoval;
+window.startFactoryReset = startFactoryReset;
+window.startReadPartitions = startReadPartitions;
+window.selectOperation = selectOperation;
+window.startSelectedOperation = startSelectedOperation;
 window.resetWizard = resetWizard;
 window.toggleConsole = toggleConsole;
 window.copyLogs = copyLogs;
 window.clearLogs = clearLogs;
 window.scrollToConsole = scrollToConsole;
 window.updateEntryCount = updateEntryCount;
+
+// --- Partition Read Callback ---
+window.onPartitionsRead = function(result) {
+  if (!result || !result.partitions) return;
+  var container = document.getElementById('partition-table-container');
+  var tbody = document.getElementById('partition-table-body');
+  var countEl = document.getElementById('partition-count');
+  if (!container || !tbody) return;
+
+  // Build table rows
+  var rows = '';
+  var highlight = {'frp': 'bg-red-50', 'persist': 'bg-amber-50', 'persistent': 'bg-amber-50', 'userdata': 'bg-blue-50', 'cache': 'bg-yellow-50'};
+  result.partitions.forEach(function(p) {
+    var bg = highlight[p.name.toLowerCase()] || '';
+    var badge = '';
+    if (p.name.toLowerCase() === 'frp') badge = '<span class="ml-1.5 text-[9px] font-bold uppercase bg-red-100 text-red-600 px-1.5 py-0.5 rounded">FRP</span>';
+    else if (p.name.toLowerCase() === 'persist' || p.name.toLowerCase() === 'persistent') badge = '<span class="ml-1.5 text-[9px] font-bold uppercase bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded">PERSIST</span>';
+    rows += '<tr class="' + bg + ' hover:bg-slate-50 transition-colors">';
+    rows += '<td class="px-4 py-1.5 font-mono font-semibold text-slate-800">' + p.name + badge + '</td>';
+    rows += '<td class="px-4 py-1.5 text-right font-mono text-slate-500">' + p.sector.toLocaleString() + '</td>';
+    rows += '<td class="px-4 py-1.5 text-right font-semibold text-slate-700">' + p.size_human + '</td>';
+    rows += '</tr>';
+  });
+  tbody.innerHTML = rows;
+  if (countEl) countEl.textContent = result.count + ' partitions';
+
+  // Show container
+  container.classList.remove('hidden');
+};
+
+// Hide partition table on reset
+var _origResetWizard = window.resetWizard;
+window.resetWizard = function() {
+  var container = document.getElementById('partition-table-container');
+  if (container) container.classList.add('hidden');
+  var tbody = document.getElementById('partition-table-body');
+  if (tbody) tbody.innerHTML = '';
+  if (_origResetWizard) _origResetWizard();
+};
 
 if (window.Stepper) {
   window.Stepper.init();
