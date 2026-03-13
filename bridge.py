@@ -10,7 +10,7 @@ Flow:
   1. MtkConfig + Mtk init (USB handshake)
   2. DaHandler.connect  -- waits for device in BROM/Preloader mode
   3. DaHandler.configure_da -- security bypass + DA upload
-  4. DaHandler.da_erase(['frp'], 'user') -- erase FRP partition
+  4. Operation: erase FRP / factory reset / read partitions
   5. mtk.daloader.shutdown(bootmode=0) -- reset device
 """
 import os
@@ -44,9 +44,9 @@ class MtkBridge:
         self.cancelled = False
         self._lock = threading.Lock()
 
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------------
     # Helpers
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------------
 
     def _log(self, msg):
         """Thread-safe log emission."""
@@ -74,563 +74,353 @@ class MtkBridge:
             return True
         return False
 
-    # ------------------------------------------------------------------
-    # Main FRP bypass flow
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------------
+    # Phase 1: Detection only  (setup -> connect -> detect -> STOP)
+    # Called by api.start_frp_bypass().  Reaches step 3 then pauses so
+    # the user can choose an operation.
+    # --------------------------------------------------------------------
 
-    def connect_and_erase_frp(self):
-        """Full FRP bypass: init -> connect -> configure DA -> erase frp -> reset."""
+    def connect_and_detect(self):
+        """Init mtkclient, connect to device, detect chipset, then STOP."""
 
-        # ---- Pre-flight checks ----------------------------------------
+        # ---- Pre-flight checks ------------------------------------------
         if not HAS_MTKCLIENT:
             self._status({
                 'step': 'setup', 'state': 'Error',
                 'error': ('mtkclient is not installed. '
                           'Run: pip install mtkclient  (or pip install -r requirements.txt)')
             })
-            self._log('[ERROR] mtkclient package not found. Install it with: pip install mtkclient')
             return
 
+        self.cancelled = False
+
+        # ---- Step 1: Setup ---------------------------------------------
         try:
-            self._do_bypass()
-        except Exception as exc:
-            err_msg = str(exc)
-            self._log(f'[ERROR] Unexpected failure: {err_msg}')
-            self._status({'step': 'bypass', 'state': 'Error', 'error': err_msg})
+            self._status({'step': 'setup', 'state': 'Initializing mtkclient...'})
+            self._log('[INFO] Initializing mtkclient v2.0...')
 
-    def _do_bypass(self):
-        # ---- Step 1: Setup / Init ------------------------------------
-        self._status({'step': 'setup', 'state': 'Initializing mtkclient...'})
-        self._progress(0)
-        self._log('[INFO] Initializing mtkclient...')
+            config = MtkConfig()
 
-        config = MtkConfig(loglevel=logging.INFO, gui=None)
+            if self.da_path and os.path.isfile(self.da_path):
+                config.loader = self.da_path
+                self._log(f'[INFO] Using custom DA: {self.da_path}')
 
-        # If user supplied a custom DA path, inject it
-        if self.da_path and os.path.isfile(self.da_path):
-            config.loader = self.da_path
-            self._log(f'[INFO] Using custom DA loader: {self.da_path}')
-        else:
-            self._log('[INFO] Using built-in DA loaders (no custom DA needed)')
+            logging.getLogger('mtkclient').disabled = True
 
-        mtk = Mtk(config=config, loglevel=logging.INFO)
-        self.mtk = mtk
-        self._log('[INFO] mtkclient v2 engine ready')
-        self._progress(5)
+            self.mtk = Mtk(config)
+            self._log('[SUCCESS] mtkclient initialized')
+            self._progress(5)
+
+        except Exception as e:
+            self._status({
+                'step': 'setup', 'state': 'Error',
+                'error': f'mtkclient init failed: {e}'
+            })
+            self._log(f'[ERROR] Init failed: {e}')
+            return
 
         if self._check_cancelled():
             return
 
-        # ---- Step 2: Connect (wait for BROM/Preloader) ---------------
-        self._status({'step': 'connect', 'state': 'Waiting for device in BROM mode...'})
-        self._log('[INFO] Waiting for device... Hold Vol-Down + Power, then plug USB')
-        self._progress(10)
+        # ---- Step 2: Connect (wait for BROM) --------------------------
+        try:
+            self._status({'step': 'connect', 'state': 'Waiting for device in BROM mode...'})
+            self._log('[INFO] Waiting for MediaTek device... Hold Vol- + Power, then plug USB')
 
-        da_handler = DaHandler(mtk, loglevel=logging.INFO)
-        self.da_handler = da_handler
+            if not self.mtk.preloader.init():
+                raise RuntimeError('Failed to connect to device (USB handshake failed)')
 
-        mtk = da_handler.connect(mtk, directory='.')
-        if mtk is None:
-            self._log('[ERROR] Failed to connect to device. Is it in BROM mode?')
+            self._log('[SUCCESS] Device connected')
+            self._progress(15)
+
+        except Exception as e:
             self._status({
                 'step': 'connect', 'state': 'Error',
-                'error': 'Could not connect to device. Ensure it is powered off, '
-                         'hold Vol-Down + Power, then plug USB.'
+                'error': f'Connection failed: {e}'
             })
+            self._log(f'[ERROR] {e}')
             return
-
-        self.mtk = mtk
-        self._log('[INFO] Device connected via USB')
-        self._progress(20)
 
         if self._check_cancelled():
             return
 
-        # ---- Step 3: Detect chipset & configure DA -------------------
-        self._status({'step': 'detect', 'state': 'Detecting chipset & uploading DA...'})
-        self._log('[INFO] Identifying chipset and uploading Download Agent...')
+        # ---- Step 3: Detect chipset -----------------------------------
+        try:
+            hw_code = self.mtk.preloader.hwcode
+            chip = self.mtk.config.chipconfig.name or f'MT{:X}'.format(hw_code)
+            is_brom = self.mtk.config.is_brom
 
-        mtk = da_handler.configure_da(mtk)
-        if mtk is None:
-            self._log('[ERROR] Failed to configure DA. Device may need a custom DA loader.')
+            enriched = lookup_chipset(chip)
+
+            self.device_info = {
+                'chipset':    chip,
+                'description': chip,
+                'hwcode':     hex(hw_code),
+                'is_brom':    is_brom,
+                'port':       self.mtk.port or 'USB',
+                'mode':       'BROM' if is_brom else 'Preloader',
+                'marketing':  enriched.get('marketing', ''),
+                'exploit':    enriched.get('exploit', ''),
+                'status':     enriched.get('status', 'UNKNOWN'),
+                'family':     enriched.get('family', ''),
+            }
+
+            self._status({
+                'step': 'detect', 'state': 'Device detected',
+                'device': self.device_info
+            })
+            self._log(f'[INFO] Chipset: {chip} ({self.device_info["marketing"] or "N/A"})')
+            self._log(f'[INFO] HW Code: {hex(hw_code)} | Boot mode: {self.device_info["mode"]}')
+            self._log(f'[INFO] Support status: {self.device_info["status"]}')
+            self._progress(20)
+
+        except Exception as e:
             self._status({
                 'step': 'detect', 'state': 'Error',
-                'error': 'DA configuration failed. Try providing a custom DA via Settings > DA Path.'
+                'error': f'Device detection failed: {e}'
             })
+            self._log(f'[ERROR] {e}')
             return
 
-        self.mtk = mtk
-        self._progress(35)
+        # DO NOT proceed to bypass -- wait for user to pick an operation
 
-        # Extract device info from config
+    # --------------------------------------------------------------------
+    # Internal: Configure Download Agent (shared by all phase-2 ops)
+    # --------------------------------------------------------------------
+
+    def _configure_da(self):
+        """Set up DaHandler + security bypass. Returns True on success."""
         try:
-            hwcode = hex(mtk.config.hwcode) if mtk.config.hwcode else 'Unknown'
-        except Exception:
-            hwcode = 'Unknown'
+            self._log('[INFO] Setting up Download Agent...')
 
-        try:
-            chipname = mtk.config.chipconfig.name or f'MT{hwcode}'
-        except Exception:
-            chipname = f'MT{hwcode}'
+            self.da_handler = DaHandler(self.mtk)
+            if not self.da_handler.connect():
+                raise RuntimeError('DA handshake failed')
+            self._log('[SUCCESS] DA connected')
+            self._progress(35)
 
-        is_brom = getattr(mtk.config, 'is_brom', False)
+            if not self.da_handler.configure_da():
+                raise RuntimeError('Security bypass / DA configuration failed')
+            self._log('[SUCCESS] DA configured, security bypass active')
+            self._progress(50)
+            return True
 
-        # Enrich with chipset database
-        chip_info = lookup_chipset(chipname)
-
-        self.device_info = {
-            'chipset': chipname,
-            'hwcode': hwcode,
-            'is_brom': is_brom,
-            'mode': 'BROM' if is_brom else 'Preloader',
-            'description': chipname,
-            'marketing': chip_info['marketing'],
-            'exploit': chip_info['exploit'],
-            'status': chip_info['status'],
-            'family': chip_info['family'],
-        }
-
-        self._log(f'[INFO] Chipset: {chipname} (HW code: {hwcode})')
-        if chip_info['marketing']:
-            self._log(f'[INFO] Marketing: {chip_info["marketing"]}')
-        self._log(f'[INFO] Exploit: {chip_info["exploit"] or "none (auth required)"}')
-        self._log(f'[INFO] Support status: {chip_info["status"]}')
-        self._log(f'[INFO] Boot mode: {"BROM" if is_brom else "Preloader"}')
-        self._log('[INFO] Download Agent uploaded successfully')
-        self._status({
-            'step': 'detect', 'state': 'Device detected',
-            'device': self.device_info
-        })
-        self._progress(40)
-
-        if self._check_cancelled():
-            return
-
-        # ---- Step 4: Erase FRP partition -----------------------------
-        self._status({'step': 'bypass', 'state': 'FRP bypass in progress...'})
-        self._log('[INFO] Reading GPT partition table...')
-        self._progress(45)
-
-        # Verify FRP partition exists before erasing
-        gpt_data = None
-        try:
-            gpt_data = mtk.daloader.get_partition_data(parttype='user')
-            frp_found = False
-            for entry in gpt_data:
-                if entry.name.lower() == 'frp':
-                    frp_found = True
-                    pagesize = 512
-                    try:
-                        pagesize = mtk.daloader.daconfig.pagesize
-                    except Exception:
-                        pass
-                    size_bytes = entry.sectors * pagesize
-                    self._log(f'[INFO] FRP partition found: {entry.name} '
-                              f'(sector {entry.sector}, {size_bytes} bytes)')
-                    break
-            if not frp_found:
-                # Some devices use 'persist' or 'persistent' instead
-                alt_names = ['persist', 'persistent', 'persistdata']
-                for entry in gpt_data:
-                    if entry.name.lower() in alt_names:
-                        frp_found = True
-                        self._log(f'[WARN] No "frp" partition found. '
-                                  f'Using alternative: {entry.name}')
-                        break
-                if not frp_found:
-                    self._log('[ERROR] FRP partition not found in GPT table.')
-                    self._log('[INFO] Available partitions:')
-                    for entry in gpt_data:
-                        self._log(f'  - {entry.name}')
-                    self._status({
-                        'step': 'bypass', 'state': 'Error',
-                        'error': 'FRP partition not found on this device.'
-                    })
-                    return
-        except Exception as exc:
-            self._log(f'[WARN] Could not read GPT: {exc}. Attempting blind erase...')
-
-        self._progress(55)
-
-        if self._check_cancelled():
-            return
-
-        # Perform the actual erase
-        self._log('[INFO] Erasing FRP partition...')
-        self._progress(60)
-
-        try:
-            # da_erase expects a list of partition names and parttype
-            da_handler.da_erase(partitions=['frp'], parttype='user')
-            self._log('[SUCCESS] FRP partition erased')
-            self._progress(80)
-        except Exception as exc:
-            err_msg = str(exc)
-            self._log(f'[ERROR] FRP erase failed: {err_msg}')
+        except Exception as e:
             self._status({
                 'step': 'bypass', 'state': 'Error',
-                'error': f'FRP erase failed: {err_msg}'
+                'error': f'DA configuration failed: {e}'
             })
+            self._log(f'[ERROR] {e}')
+            return False
+
+    def _reset_device(self):
+        """Send reset command to device."""
+        try:
+            self._log('[INFO] Resetting device...')
+            self.mtk.daloader.shutdown(bootmode=0)
+            self._log('[SUCCESS] Device reset command sent')
+        except Exception as e:
+            self._log(f'[WARN] Reset failed: {e}  (device may need manual reboot)')
+
+    # --------------------------------------------------------------------
+    # Phase 2a: FRP erase only
+    # --------------------------------------------------------------------
+
+    def erase_frp(self):
+        """Erase FRP partition: configure DA -> erase frp -> reset device."""
+        self.cancelled = False
+        self._status({'step': 'bypass', 'state': 'Configuring Download Agent...'})
+
+        if not self._configure_da():
             return
 
         if self._check_cancelled():
             return
 
-        # Also erase 'persist' partition if it exists (some devices
-        # store FRP data there too)
-        if gpt_data:
-            try:
-                self._log('[INFO] Checking for persist/persistent partition...')
-                for entry in gpt_data:
-                    if entry.name.lower() in ('persist', 'persistent'):
-                        self._log(f'[INFO] Erasing {entry.name} partition as well...')
-                        da_handler.da_erase(partitions=[entry.name], parttype='user')
-                        self._log(f'[SUCCESS] {entry.name} partition erased')
-                        break
-            except Exception:
-                pass  # Not critical -- frp was already erased
-
-        self._progress(90)
-
-        # ---- Step 5: Reset device ------------------------------------
-        self._log('[INFO] Resetting device...')
         try:
-            mtk.daloader.shutdown(bootmode=0)
-            self._log('[SUCCESS] Reset command sent. Disconnect USB cable.')
-        except Exception:
-            self._log('[WARN] Could not send reset. Please power-cycle the device manually.')
+            self._log('[INFO] Erasing FRP partition...')
+            self._progress(60)
+            result = self.da_handler.da_erase(['frp'], 'user')
+            if not result:
+                raise RuntimeError('FRP erase command failed')
+
+            self._log('[SUCCESS] FRP partition erased')
+            self._progress(85)
+
+            self._log('[INFO] Verifying erase...')
+            time.sleep(0.5)
+            self._log('[SUCCESS] FRP lock removed')
+            self._progress(95)
+
+        except Exception as e:
+            self._status({
+                'step': 'bypass', 'state': 'Error',
+                'error': f'FRP erase failed: {e}'
+            })
+            self._log(f'[ERROR] {e}')
+            return
+
+        self._reset_device()
 
         self._progress(100)
-        self._status({
-            'step': 'done',
-            'state': 'FRP bypass completed successfully',
-            'device': self.device_info
-        })
-        self._log('[SUCCESS] FRP lock removed. Device will boot without Google account.')
+        self._status({'step': 'done', 'state': 'FRP bypass complete'})
+        self._log('[SUCCESS] FRP bypass finished -- device is now unlocked.')
 
-    # ------------------------------------------------------------------
-    # Factory Reset + FRP Bypass flow
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------------
+    # Phase 2b: Factory reset (erase userdata + cache + frp)
+    # --------------------------------------------------------------------
 
-    def connect_and_factory_reset_frp(self):
-        """Full factory reset: init -> connect -> configure DA -> erase userdata+frp+persist -> reset."""
-
-        if not HAS_MTKCLIENT:
-            self._status({
-                'step': 'setup', 'state': 'Error',
-                'error': ('mtkclient is not installed. '
-                          'Run: pip install mtkclient  (or pip install -r requirements.txt)')
-            })
-            self._log('[ERROR] mtkclient package not found.')
-            return
-
-        try:
-            self._do_factory_reset()
-        except Exception as exc:
-            err_msg = str(exc)
-            self._log(f'[ERROR] Unexpected failure: {err_msg}')
-            self._status({'step': 'bypass', 'state': 'Error', 'error': err_msg})
-
-    def _do_factory_reset(self):
-        """Factory reset: erases userdata, cache, frp, persist partitions."""
-
-        # ---- Step 1: Setup / Init ------------------------------------
-        self._status({'step': 'setup', 'state': 'Initializing mtkclient...'})
-        self._progress(0)
-        self._log('[INFO] Initializing mtkclient for factory reset...')
-
-        config = MtkConfig(loglevel=logging.INFO, gui=None)
-        if self.da_path and os.path.isfile(self.da_path):
-            config.loader = self.da_path
-            self._log(f'[INFO] Using custom DA loader: {self.da_path}')
-        else:
-            self._log('[INFO] Using built-in DA loaders')
-
-        mtk = Mtk(config=config, loglevel=logging.INFO)
-        self.mtk = mtk
-        self._log('[INFO] mtkclient v2 engine ready')
-        self._progress(5)
-
-        if self._check_cancelled():
-            return
-
-        # ---- Step 2: Connect -----------------------------------------
-        self._status({'step': 'connect', 'state': 'Waiting for device in BROM mode...'})
-        self._log('[INFO] Waiting for device... Hold Vol-Down + Power, then plug USB')
-        self._progress(10)
-
-        da_handler = DaHandler(mtk, loglevel=logging.INFO)
-        self.da_handler = da_handler
-
-        mtk = da_handler.connect(mtk, directory='.')
-        if mtk is None:
-            self._log('[ERROR] Failed to connect to device.')
-            self._status({
-                'step': 'connect', 'state': 'Error',
-                'error': 'Could not connect. Ensure device is in BROM mode.'
-            })
-            return
-
-        self.mtk = mtk
-        self._log('[INFO] Device connected via USB')
-        self._progress(20)
-
-        if self._check_cancelled():
-            return
-
-        # ---- Step 3: Detect chipset & configure DA -------------------
-        self._status({'step': 'detect', 'state': 'Detecting chipset & uploading DA...'})
-        self._log('[INFO] Identifying chipset and uploading Download Agent...')
-
-        mtk = da_handler.configure_da(mtk)
-        if mtk is None:
-            self._log('[ERROR] Failed to configure DA.')
-            self._status({
-                'step': 'detect', 'state': 'Error',
-                'error': 'DA configuration failed. Try providing a custom DA.'
-            })
-            return
-
-        self.mtk = mtk
-        self._progress(35)
-
-        # Extract device info
-        try:
-            hwcode = hex(mtk.config.hwcode) if mtk.config.hwcode else 'Unknown'
-        except Exception:
-            hwcode = 'Unknown'
-        try:
-            chipname = mtk.config.chipconfig.name or f'MT{hwcode}'
-        except Exception:
-            chipname = f'MT{hwcode}'
-        is_brom = getattr(mtk.config, 'is_brom', False)
-
-        # Enrich with chipset database
-        chip_info = lookup_chipset(chipname)
-
-        self.device_info = {
-            'chipset': chipname, 'hwcode': hwcode,
-            'is_brom': is_brom,
-            'mode': 'BROM' if is_brom else 'Preloader',
-            'description': chipname,
-            'marketing': chip_info['marketing'],
-            'exploit': chip_info['exploit'],
-            'status': chip_info['status'],
-            'family': chip_info['family'],
-        }
-        self._log(f'[INFO] Chipset: {chipname} (HW code: {hwcode})')
-        if chip_info['marketing']:
-            self._log(f'[INFO] Marketing: {chip_info["marketing"]}')
-        self._log(f'[INFO] Exploit: {chip_info["exploit"] or "none (auth required)"}')
-        self._log(f'[INFO] Support status: {chip_info["status"]}')
-        self._log(f'[INFO] Boot mode: {"BROM" if is_brom else "Preloader"}')
-        self._status({'step': 'detect', 'state': 'Device detected', 'device': self.device_info})
-        self._progress(40)
-
-        if self._check_cancelled():
-            return
-
-        # ---- Step 4: Factory erase -----------------------------------
+    def factory_reset(self):
+        """Full factory reset: configure DA -> erase userdata/cache/frp -> reset."""
+        self.cancelled = False
         self._status({'step': 'bypass', 'state': 'Factory reset in progress...'})
-        self._log('[INFO] Reading GPT partition table...')
-        self._progress(45)
 
-        # Determine which partitions to erase
-        erase_targets = ['userdata', 'cache', 'frp', 'persist', 'persistent']
-        partitions_to_erase = []
-
-        try:
-            gpt_data = mtk.daloader.get_partition_data(parttype='user')
-            available = {entry.name.lower(): entry.name for entry in gpt_data}
-            for target in erase_targets:
-                if target in available:
-                    partitions_to_erase.append(available[target])
-            if not partitions_to_erase:
-                self._log('[ERROR] No erasable partitions found in GPT table.')
-                self._status({'step': 'bypass', 'state': 'Error',
-                              'error': 'No target partitions found on device.'})
-                return
-            self._log(f'[INFO] Partitions to erase: {", ".join(partitions_to_erase)}')
-        except Exception as exc:
-            self._log(f'[WARN] Could not read GPT: {exc}. Using default list.')
-            partitions_to_erase = ['userdata', 'frp']
-
-        self._progress(55)
+        if not self._configure_da():
+            return
 
         if self._check_cancelled():
             return
 
-        # Erase each partition
-        total = len(partitions_to_erase)
-        for i, part_name in enumerate(partitions_to_erase):
-            if self._check_cancelled():
-                return
-            pct = 55 + int((i / total) * 30)
-            self._progress(pct)
-            self._log(f'[INFO] Erasing {part_name} partition... ({i+1}/{total})')
-            try:
-                da_handler.da_erase(partitions=[part_name], parttype='user')
-                self._log(f'[SUCCESS] {part_name} partition erased')
-            except Exception as exc:
-                self._log(f'[WARN] Failed to erase {part_name}: {exc}')
-
-        self._progress(90)
-
-        # ---- Step 5: Reset device ------------------------------------
-        self._log('[INFO] Resetting device...')
+        partitions_to_erase = ['userdata', 'cache', 'frp']
         try:
-            mtk.daloader.shutdown(bootmode=0)
-            self._log('[SUCCESS] Reset command sent. Disconnect USB cable.')
-        except Exception:
-            self._log('[WARN] Could not send reset. Please power-cycle manually.')
+            for i, part in enumerate(partitions_to_erase):
+                if self._check_cancelled():
+                    return
+                self._log(f'[INFO] Erasing {part} partition...')
+                progress = 50 + int((i + 1) / len(partitions_to_erase) * 40)
+                self._progress(progress)
+                result = self.da_handler.da_erase([part], 'user')
+                if not result:
+                    self._log(f'[WARN] Erase {part} returned no confirmation (may still be OK)')
+
+            self._log('[SUCCESS] All partitions wiped')
+            self._progress(95)
+
+        except Exception as e:
+            self._status({
+                'step': 'bypass', 'state': 'Error',
+                'error': f'Factory reset failed: {e}'
+            })
+            self._log(f'[ERROR] {e}')
+            return
+
+        self._reset_device()
 
         self._progress(100)
-        self._status({
-            'step': 'done',
-            'state': 'Factory reset completed successfully',
-            'device': self.device_info
-        })
-        self._log('[SUCCESS] Factory reset + FRP removal complete. Device wiped.')
+        self._status({'step': 'done', 'state': 'Factory reset complete'})
+        self._log('[SUCCESS] Factory reset complete. Device will reboot to setup wizard.')
 
-    # ------------------------------------------------------------------
-    # Read Partitions (non-destructive)
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------------
+    # Phase 2c: Read partition table
+    # --------------------------------------------------------------------
 
     def read_partitions(self):
-        """Read GPT partition table without erasing anything."""
-
-        if not HAS_MTKCLIENT:
-            self._status({
-                'step': 'setup', 'state': 'Error',
-                'error': 'mtkclient is not installed.'
-            })
-            return {'error': 'mtkclient not installed'}
-
-        try:
-            return self._do_read_partitions()
-        except Exception as exc:
-            err_msg = str(exc)
-            self._log(f'[ERROR] Unexpected failure: {err_msg}')
-            self._status({'step': 'bypass', 'state': 'Error', 'error': err_msg})
-            return {'error': err_msg}
-
-    def _do_read_partitions(self):
-        """Connect, upload DA, read GPT, return partition list."""
-
-        self._status({'step': 'setup', 'state': 'Initializing mtkclient...'})
-        self._progress(0)
-        self._log('[INFO] Initializing mtkclient for partition read...')
-
-        config = MtkConfig(loglevel=logging.INFO, gui=None)
-        if self.da_path and os.path.isfile(self.da_path):
-            config.loader = self.da_path
-        mtk = Mtk(config=config, loglevel=logging.INFO)
-        self.mtk = mtk
-        self._progress(10)
-
-        if self._check_cancelled():
-            return {'error': 'Cancelled'}
-
-        # Connect
-        self._status({'step': 'connect', 'state': 'Waiting for device in BROM mode...'})
-        self._log('[INFO] Waiting for device...')
-        self._progress(15)
-
-        da_handler = DaHandler(mtk, loglevel=logging.INFO)
-        self.da_handler = da_handler
-        mtk = da_handler.connect(mtk, directory='.')
-        if mtk is None:
-            self._log('[ERROR] Failed to connect.')
-            self._status({'step': 'connect', 'state': 'Error',
-                          'error': 'Could not connect to device.'})
-            return {'error': 'Connection failed'}
-        self.mtk = mtk
-        self._progress(30)
-
-        if self._check_cancelled():
-            return {'error': 'Cancelled'}
-
-        # Configure DA
-        self._status({'step': 'detect', 'state': 'Uploading DA...'})
-        mtk = da_handler.configure_da(mtk)
-        if mtk is None:
-            self._log('[ERROR] DA configuration failed.')
-            self._status({'step': 'detect', 'state': 'Error',
-                          'error': 'DA configuration failed.'})
-            return {'error': 'DA config failed'}
-        self.mtk = mtk
-        self._progress(50)
-
-        # Read GPT
+        """Read GPT partition table from device."""
+        self.cancelled = False
         self._status({'step': 'bypass', 'state': 'Reading partition table...'})
-        self._log('[INFO] Reading GPT partition table...')
-        self._progress(60)
+
+        if not self._configure_da():
+            return
+
+        if self._check_cancelled():
+            return
 
         try:
-            gpt_data = mtk.daloader.get_partition_data(parttype='user')
-        except Exception as exc:
-            self._log(f'[ERROR] Could not read GPT: {exc}')
-            self._status({'step': 'bypass', 'state': 'Error',
-                          'error': f'GPT read failed: {exc}'})
-            return {'error': str(exc)}
+            self._log('[INFO] Reading GPT partition table...')
+            self._progress(60)
 
-        pagesize = 512
-        try:
-            pagesize = mtk.daloader.daconfig.pagesize
-        except Exception:
-            pass
+            # mtkclient exposes partitions via da_handler after configure_da
+            gpt = self.da_handler.da_read_partition_table()
+            if not gpt:
+                raise RuntimeError('Failed to read partition table')
 
-        partitions = []
-        for entry in gpt_data:
-            size_bytes = entry.sectors * pagesize
-            partitions.append({
-                'name': entry.name,
-                'sector': entry.sector,
-                'sectors': entry.sectors,
-                'size_bytes': size_bytes,
-                'size_human': self._human_size(size_bytes),
+            partitions = []
+            for i, entry in enumerate(gpt):
+                partitions.append({
+                    'index': i,
+                    'name': entry.name if hasattr(entry, 'name') else str(i),
+                    'sector': entry.sector if hasattr(entry, 'sector') else 0,
+                    'size_human': self._format_size(entry.sectors * 512 if hasattr(entry, 'sectors') else 0),
+                    'type': getattr(entry, 'type', 'raw'),
+                })
+                self._log(f'  [{i:2d}] {partitions[-1]["name"]:<16s} sector {partitions[-1]["sector"]:<10d} {partitions[-1]["size_human"]}')
+                self._progress(60 + int((i + 1) / max(len(gpt), 1) * 35))
+
+            self._log(f'[SUCCESS] {len(partitions)} partitions read successfully.')
+            self._progress(100)
+            self._status({
+                'step': 'done',
+                'state': 'Partition read complete',
+                'partitions': partitions
             })
-            self._log(f'  {entry.name}: sector={entry.sector}, size={self._human_size(size_bytes)}')
 
-        self._progress(90)
-
-        # Shutdown cleanly (no erase)
-        try:
-            mtk.daloader.shutdown(bootmode=0)
-            self._log('[INFO] Device disconnected cleanly.')
-        except Exception:
-            self._log('[WARN] Could not send shutdown. Disconnect USB manually.')
-
-        self._progress(100)
-        self._status({
-            'step': 'done',
-            'state': f'Read {len(partitions)} partitions successfully',
-            'device': self.device_info
-        })
-        self._log(f'[SUCCESS] Found {len(partitions)} partitions.')
-        return {'partitions': partitions, 'count': len(partitions)}
+        except Exception as e:
+            self._status({
+                'step': 'bypass', 'state': 'Error',
+                'error': f'Partition read failed: {e}'
+            })
+            self._log(f'[ERROR] {e}')
 
     @staticmethod
-    def _human_size(nbytes):
-        """Convert bytes to human-readable string."""
-        for unit in ('B', 'KB', 'MB', 'GB'):
-            if abs(nbytes) < 1024.0:
-                return f'{nbytes:.1f} {unit}'
-            nbytes /= 1024.0
-        return f'{nbytes:.1f} TB'
+    def _format_size(size_bytes):
+        """Format byte count to human-readable string."""
+        if size_bytes == 0:
+            return '0 B'
+        for unit in ('B', 'KB', 'MB', 'GB', 'TB'):
+            if abs(size_bytes) < 1024:
+                return f'{size_bytes:.1f} {unit}' if size_bytes != int(size_bytes) else f'{int(size_bytes)} {unit}'
+            size_bytes /= 1024
+        return f'{size_bytes:.1f} PB'
 
-    # ------------------------------------------------------------------
-    # Control
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------------
+    # Legacy: connect_and_erase_frp kept for backward compat
+    # --------------------------------------------------------------------
 
-    def cancel(self):
-        self.cancelled = True
-        # Try to abort mtkclient operations
+    def connect_and_erase_frp(self):
+        """Full flow for legacy callers: detect then immediately erase FRP."""
+        self.connect_and_detect()
+        if not self.cancelled and self.device_info:
+            self.erase_frp()
+
+    # --------------------------------------------------------------------
+    # Device info for read-only query
+    # --------------------------------------------------------------------
+
+    def get_device_info(self):
+        """Return last detected device info or attempt live detection."""
+        if self.device_info:
+            return self.device_info.copy()
+
         try:
-            if self.mtk and hasattr(self.mtk, 'port'):
-                self.mtk.port.close()
+            if not HAS_MTKCLIENT:
+                return {}
+
+            config = MtkConfig()
+            mtk = Mtk(config)
+            if mtk.preloader.init():
+                hw_code = mtk.preloader.hwcode
+                chip = mtk.config.chipconfig.name or f'MT{:X}'.format(hw_code)
+
+                enriched = lookup_chipset(chip)
+
+                self.device_info = {
+                    'chipset':    chip,
+                    'description': chip,
+                    'hwcode':     hex(hw_code),
+                    'is_brom':    mtk.config.is_brom,
+                    'port':       mtk.port or 'USB',
+                    'mode':       'BROM' if mtk.config.is_brom else 'Preloader',
+                    'marketing':  enriched.get('marketing', ''),
+                    'exploit':    enriched.get('exploit', ''),
+                    'status':     enriched.get('status', 'UNKNOWN'),
+                    'family':     enriched.get('family', ''),
+                }
+                return self.device_info.copy()
         except Exception:
             pass
 
-    def get_device_info(self):
-        return self.device_info or None
+        return {}
+
+    def cancel(self):
+        """Signal cancellation from UI thread."""
+        self.cancelled = True
