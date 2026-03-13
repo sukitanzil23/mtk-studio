@@ -1,5 +1,6 @@
 """MTK Studio -- Python API exposed to JavaScript via pywebview."""
 import json
+import os
 import threading
 from config import AppConfig
 from mock import MockBridge
@@ -36,10 +37,12 @@ class Api:
                 on_progress=self._on_progress,
                 on_status=self._on_status
             )
+        da_path = self.config.get('da_path')
         return MtkBridge(
             on_log=self._on_log,
             on_progress=self._on_progress,
-            on_status=self._on_status
+            on_status=self._on_status,
+            da_path=da_path
         )
 
     def _safe_js_string(self, s):
@@ -165,7 +168,8 @@ class Api:
         try:
             return {
                 'mock_mode': bool(self.config.get('mock_mode')),
-                'last_port': self.config.get('last_port')
+                'last_port': self.config.get('last_port'),
+                'da_path': self.config.get('da_path')
             }
         except Exception as e:
             return {'error': str(e)}
@@ -174,6 +178,36 @@ class Api:
         try:
             for k, v in settings.items():
                 self.config.set(k, v)
+            self.config.save()
+            return {'status': 'ok'}
+        except Exception as e:
+            return {'error': str(e)}
+
+    def browse_da_file(self):
+        """Open a native file dialog to pick a DA loader (.bin) file."""
+        try:
+            if not self.window:
+                return {'error': 'Window not ready'}
+            result = self.window.create_file_dialog(
+                dialog_type=10,  # OPEN_DIALOG
+                allow_multiple=False,
+                file_types=('DA Loader Files (*.bin)|*.bin',
+                            'All Files (*.*)|*.*')
+            )
+            if result and len(result) > 0:
+                path = result[0]
+                if os.path.isfile(path):
+                    self.config.set('da_path', path)
+                    self.config.save()
+                    return {'status': 'ok', 'da_path': path}
+            return {'status': 'cancelled'}
+        except Exception as e:
+            return {'error': str(e)}
+
+    def clear_da_path(self):
+        """Remove the custom DA path, reverting to built-in DA loaders."""
+        try:
+            self.config.set('da_path', None)
             self.config.save()
             return {'status': 'ok'}
         except Exception as e:
