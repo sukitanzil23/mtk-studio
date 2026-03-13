@@ -77,6 +77,9 @@ function navigate(pageName) {
 }
 
 window.addEventListener('hashchange', function() {
+  // Initialize console sidebar after DOM is built
+  Console.init();
+
   const hash = window.location.hash.replace('#/', '');
   loadPage(hash || 'frp-bypass');
 });
@@ -233,6 +236,9 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
     </div>
   `;
+
+  // Initialize console sidebar after DOM is built
+  Console.init();
 
   const hash = window.location.hash.replace('#/', '');
   loadPage(hash || 'frp-bypass');
