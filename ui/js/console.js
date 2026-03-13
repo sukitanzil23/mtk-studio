@@ -30,7 +30,6 @@ const Console = {
     const collapsed = sessionStorage.getItem('console-collapsed') === 'true';
     if (collapsed) {
       this._el.classList.add('collapsed');
-      document.getElementById('main-wrapper')?.classList.remove('mr-80');
     }
   },
 
@@ -94,15 +93,15 @@ const Console = {
   },
 
   // Toggle sidebar visibility
+  // FIX: uses CSS width:0 collapse via .collapsed class -- no more
+  // broken #main-wrapper margin hack. The sidebar is a flex child so
+  // collapsing its width automatically gives space back to <main>.
   toggle() {
     if (!this._el) return;
-    const mainWrapper = document.getElementById('main-wrapper');
     const isCollapsed = this._el.classList.toggle('collapsed');
     sessionStorage.setItem('console-collapsed', isCollapsed);
-    if (mainWrapper) {
-      mainWrapper.classList.toggle('mr-80', !isCollapsed);
-    }
-    // Update chevron
+
+    // Update chevron direction
     const chevron = document.getElementById('console-toggle-icon');
     if (chevron) {
       chevron.textContent = isCollapsed ? 'chevron_left' : 'chevron_right';
