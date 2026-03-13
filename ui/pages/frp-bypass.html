@@ -552,9 +552,10 @@ function startSelectedOperation() {
 
 function startFrpRemoval() {
   if (window.Bridge) {
-    Bridge.startFrpBypass().then(function(result) {
+    Bridge.startFrpErase().then(function(result) {
       if (result && result.error) {
         window.showToast('error', result.error);
+        return;
       }
     });
   }
@@ -564,9 +565,10 @@ function startFrpRemoval() {
 
 function startFactoryReset() {
   if (window.Bridge) {
-    Bridge.startFactoryResetFrp().then(function(result) {
+    Bridge.startFactoryReset().then(function(result) {
       if (result && result.error) {
         window.showToast('error', result.error);
+        return;
       }
     });
   }
@@ -579,6 +581,7 @@ function startReadPartitions() {
     Bridge.readPartitions().then(function(result) {
       if (result && result.error) {
         window.showToast('error', result.error);
+        return;
       }
     });
   }
@@ -678,7 +681,10 @@ window.addEventListener('deviceDetected', function(e) {
 
 window.updateStatus = function(status) {
   if (status.step && window.Stepper) {
-    var map = { setup: 1, connect: 2, detect: 3, bypass: 4, done: 5 };
+    var map = { setup: 1, connect: 2, detect: 3, done: 5 };
+    // NOTE: 'bypass' is NOT in this map. Step 4 transition is triggered
+    // explicitly by startSelectedOperation() when the user clicks Start.
+    // This prevents auto-advancing past the operation selector on step 3.
     var n = map[status.step];
     if (n) window.Stepper.goToStep(n);
   }
@@ -691,6 +697,10 @@ window.updateStatus = function(status) {
   if (status.step === 'done' && window.Stepper) {
     window.Stepper.completeStep(4);
     if (window.Console) window.Console.addSessionEnd();
+    // If partitions data came with done status, render partition table
+    if (status.partitions && window.onPartitionsRead) {
+      window.onPartitionsRead({ partitions: status.partitions, count: status.partitions.length });
+    }
   }
   if (status.checks) {
     ['driver', 'device', 'mtkclient'].forEach(function(name) {
