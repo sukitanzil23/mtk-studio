@@ -307,7 +307,7 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           Start New Session
         </button>
-        <button onclick="scrollToConsole()"
+        <button onclick="if(window.Console && !Console._isOpen) Console.toggle();"
                 class="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors">
           View Full Logs
         </button>
@@ -315,42 +315,7 @@
     </div>
   </div>
 
-  <!-- ============================================================ -->
-  <!-- Console Log Panel (collapsible)                               -->
-  <!-- ============================================================ -->
-  <div class="mt-6">
-    <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
-      <!-- Console Header / Toggle -->
-      <div onclick="toggleConsole()" class="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-800 transition-colors">
-        <div class="flex items-center gap-2 text-slate-400">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-          <span id="btn-console-toggle" class="text-xs font-mono font-bold">Show Console</span>
-        </div>
-        <div class="flex items-center gap-4">
-          <span id="console-entry-count" class="text-[10px] font-mono text-slate-500 italic">0 entries</span>
-          <svg id="console-chevron" class="w-4 h-4 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-        </div>
-      </div>
 
-      <!-- Console Content (hidden by default) -->
-      <div id="console-panel" class="hidden">
-        <!-- Console Action Bar -->
-        <div class="flex items-center justify-end gap-2 px-4 py-1.5 border-t border-slate-800">
-          <button onclick="copyLogs()" class="text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors px-2 py-1 rounded">
-            Copy Logs
-          </button>
-          <span class="text-slate-700">|</span>
-          <button onclick="clearLogs()" class="text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors px-2 py-1 rounded">
-            Clear
-          </button>
-        </div>
-        <!-- Log Output -->
-        <div id="console-log" class="px-4 pb-4 h-[200px] overflow-y-auto font-mono text-xs text-green-400 scroll-smooth" style="scrollbar-width: thin; scrollbar-color: #334155 #0f172a;">
-          <div class="text-slate-500 text-xs font-mono">[Ready] Waiting for operation...</div>
-        </div>
-      </div>
-    </div>
-  </div>
 
 </div>
 
@@ -358,9 +323,6 @@
 <!-- FRP Bypass Page Logic                                          -->
 <!-- ============================================================== -->
 <script>
-// Track console entry count
-var _consoleEntryCount = 0;
-
 // --- Core Actions ---
 
 function startBypass() {
@@ -399,12 +361,15 @@ function resetWizard() {
     Stepper.reset();
     Stepper.goToStep(1);
   }
+  // Reset progress bar
   var bar = document.getElementById('progress-bar');
   var pct = document.getElementById('progress-pct');
   if (bar) bar.style.width = '0%';
   if (pct) pct.textContent = '0%';
+  // Clear operation log
   var opLog = document.getElementById('operation-log');
   if (opLog) opLog.innerHTML = '<div class="text-xs text-slate-400 py-1">Waiting for operations...</div>';
+  // Reset check items
   ['driver', 'device', 'mtkclient'].forEach(function(name) {
     var el = document.getElementById('check-' + name);
     if (el) {
@@ -416,6 +381,7 @@ function resetWizard() {
       badge.className = 'text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full';
     }
   });
+  // Reset device info
   var el = function(id) { return document.getElementById(id); };
   if (el('device-chipset')) el('device-chipset').textContent = 'Detecting...';
   if (el('device-description')) el('device-description').textContent = '--';
@@ -425,51 +391,16 @@ function resetWizard() {
   updateFooterStatus('Ready');
 }
 
+// --- Footer Helper ---
+
 function updateFooterStatus(text) {
   var fs = document.getElementById('footer-status');
   if (fs) fs.textContent = text;
 }
 
-function toggleConsole() {
-  var panel = document.getElementById('console-panel');
-  var btn = document.getElementById('btn-console-toggle');
-  var chevron = document.getElementById('console-chevron');
-  if (!panel) return;
-  var isHidden = panel.classList.contains('hidden');
-  panel.classList.toggle('hidden', !isHidden);
-  if (btn) btn.textContent = isHidden ? 'Hide Console' : 'Show Console';
-  if (chevron) chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
-}
+// --- Event Listeners ---
 
-function scrollToConsole() {
-  var panel = document.getElementById('console-panel');
-  if (panel && panel.classList.contains('hidden')) toggleConsole();
-  var el = document.getElementById('console-log');
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function copyLogs() {
-  var panel = document.getElementById('console-log');
-  if (!panel) return;
-  navigator.clipboard.writeText(panel.innerText).then(function() {
-    window.showToast('success', 'Logs copied to clipboard');
-  });
-}
-
-function clearLogs() {
-  var panel = document.getElementById('console-log');
-  if (!panel) return;
-  var time = new Date().toTimeString().slice(0, 8);
-  panel.innerHTML = '<div class="text-slate-500 text-xs font-mono">[' + time + '] Console cleared</div>';
-  _consoleEntryCount = 1;
-  updateEntryCount();
-}
-
-function updateEntryCount() {
-  var counter = document.getElementById('console-entry-count');
-  if (counter) counter.textContent = _consoleEntryCount + ' entr' + (_consoleEntryCount === 1 ? 'y' : 'ies');
-}
-
+// Device detected event -> fill device info card
 window.addEventListener('deviceDetected', function(e) {
   var info = e.detail;
   var el = function(id) { return document.getElementById(id); };
@@ -481,48 +412,37 @@ window.addEventListener('deviceDetected', function(e) {
   if (el('done-device')) el('done-device').textContent = (info.chipset || '?') + ' (' + (info.description || '?') + ')';
 });
 
-var _origAddLog = window.addLog;
-window.addLog = function(message) {
-  if (_origAddLog) _origAddLog(message);
-  _consoleEntryCount++;
-  updateEntryCount();
-  var opLog = document.getElementById('operation-log');
-  if (opLog) {
-    if (opLog.querySelector('.text-slate-400')) {
-      opLog.innerHTML = '';
-    }
-    var time = new Date().toTimeString().slice(0, 8);
-    var item = document.createElement('div');
-    item.className = 'text-xs text-slate-600 py-1.5 border-b border-slate-100 last:border-0 flex items-center gap-2';
-    var icon = '';
-    if (message.indexOf('[SUCCESS]') !== -1 || message.indexOf('[DONE]') !== -1) {
-      icon = '<svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
-    } else if (message.indexOf('[ERROR]') !== -1) {
-      icon = '<svg class="w-3.5 h-3.5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
-    } else {
-      icon = '<svg class="w-3.5 h-3.5 text-blue-500 shrink-0 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>';
-    }
-    item.innerHTML = icon + '<span>[' + time + '] ' + message + '</span>';
-    opLog.appendChild(item);
-    opLog.scrollTop = opLog.scrollHeight;
-  }
-};
+// --- Override updateStatus for device cards & check items ---
 
-var _origUpdateStatus = window.updateStatus;
 window.updateStatus = function(status) {
-  if (_origUpdateStatus) _origUpdateStatus(status);
+  // Route to correct step
+  if (status.step && window.Stepper) {
+    var map = { setup: 1, connect: 2, detect: 3, bypass: 4, done: 5 };
+    var n = map[status.step];
+    if (n) window.Stepper.goToStep(n);
+  }
+  // Dispatch device info
   if (status.device) {
     window.dispatchEvent(new CustomEvent('deviceDetected', { detail: status.device }));
   }
+  // Show errors as toast with retry
   if (status.error) {
     window.showToast('error', status.error, function() { startBypass(); });
   }
+  // Mark step complete when done
+  if (status.step === 'done' && window.Stepper) {
+    window.Stepper.completeStep(4);
+    if (window.Console) window.Console.addSessionEnd();
+  }
+
+  // Update readiness check items (step 1)
   if (status.checks) {
     ['driver', 'device', 'mtkclient'].forEach(function(name) {
       var checkStatus = status.checks[name];
       var el = document.getElementById('check-' + name);
       var badge = document.getElementById('check-' + name + '-badge');
       if (!el || !badge) return;
+
       if (checkStatus === 'ready' || checkStatus === true) {
         el.className = 'w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0 transition-colors';
         badge.textContent = 'Ready';
@@ -534,6 +454,8 @@ window.updateStatus = function(status) {
       }
     });
   }
+
+  // Mark all checks ready when step is 'setup' (simple fallback)
   if (status.step === 'setup') {
     ['driver', 'device', 'mtkclient'].forEach(function(name) {
       var el = document.getElementById('check-' + name);
@@ -545,22 +467,31 @@ window.updateStatus = function(status) {
       }
     });
   }
-  var stepStatusMap = {
-    'setup': 'System Ready - Idle',
-    'connect': 'Waiting for Device',
-    'detect': 'Device Connected - Ready',
-    'bypass': 'Bypass In Progress',
-    'done': 'Operation Complete'
-  };
-  if (status.step && stepStatusMap[status.step]) {
-    updateFooterStatus(stepStatusMap[status.step]);
+
+  // Update footer status per step (use Python state if available, fallback to map)
+  if (status.state) {
+    updateFooterStatus(status.state);
+  } else if (status.step) {
+    var stepStatusMap = {
+      'setup': 'System Ready - Idle',
+      'connect': 'Waiting for Device',
+      'detect': 'Device Connected - Ready',
+      'bypass': 'Bypass In Progress',
+      'done': 'Operation Complete'
+    };
+    if (stepStatusMap[status.step]) {
+      updateFooterStatus(stepStatusMap[status.step]);
+    }
   }
 };
+
+// --- Stepper Init ---
 
 function initStepper() {
   if (window.Stepper) {
     window.Stepper.init();
   }
+  // Count existing console entries
   var consoleLog = document.getElementById('console-log');
   if (consoleLog) {
     _consoleEntryCount = consoleLog.children.length;
@@ -571,14 +502,16 @@ function initStepper() {
 
 window.initStepper = initStepper;
 window.startBypass = startBypass;
-window.startFrpRemoval = startFrpRemoval;
 window.cancelBypass = cancelBypass;
+window.startFrpRemoval = startFrpRemoval;
 window.resetWizard = resetWizard;
 window.toggleConsole = toggleConsole;
 window.copyLogs = copyLogs;
 window.clearLogs = clearLogs;
 window.scrollToConsole = scrollToConsole;
+window.updateEntryCount = updateEntryCount;
 
+// Auto-init if stepper is already loaded
 if (window.Stepper) {
   window.Stepper.init();
 }
