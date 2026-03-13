@@ -15,6 +15,9 @@ class Api:
         self._bridge = None
         self._bypass_thread = None
         self._usb_monitor = None
+        # Bug 1 fix: track bypass status internally so get_bypass_status() returns real data
+        self._status = {'step': 'idle', 'state': 'idle', 'progress': 0}
+        self._status_lock = threading.Lock()
 
     def set_window(self, window):
         self.window = window
@@ -47,13 +50,19 @@ class Api:
     def _on_log(self, message):
         if self.window:
             safe = self._safe_js_string(message)
-            self.window.evaluate_js(f"window.addLog('{safe}')")
+            self.window.evaluate_js(f"window.addLog(\'{safe}\')")
 
     def _on_progress(self, percent):
+        # Bug 1 fix: capture progress into _status
+        with self._status_lock:
+            self._status['progress'] = int(percent)
         if self.window:
             self.window.evaluate_js(f'window.updateProgress({int(percent)})')
 
     def _on_status(self, status_dict):
+        # Bug 1 fix: capture full status dict
+        with self._status_lock:
+            self._status.update(status_dict)
         if self.window:
             self.window.evaluate_js(f'window.updateStatus({json.dumps(status_dict)})')
 
@@ -65,11 +74,36 @@ class Api:
         if self.window:
             self.window.evaluate_js('window.onDeviceDisconnected()')
 
+    def _is_bypass_running(self):
+        """Bug 2 fix: check if a bypass thread is actively running."""
+        return (self._bypass_thread is not None
+                and self._bypass_thread.is_alive())
+
+    def _reset_state(self):
+        """Bug 4 fix: clean up bridge and thread refs after completion/cancel."""
+        self._bridge = None
+        self._bypass_thread = None
+        with self._status_lock:
+            self._status = {'step': 'idle', 'state': 'idle', 'progress': 0}
+
+    def _run_bypass(self):
+        """Thread target -- runs bypass then resets state."""
+        try:
+            self._bridge.connect_and_erase_frp()
+        finally:
+            # Bug 4 fix: always reset after the thread finishes
+            self._reset_state()
+
     def start_frp_bypass(self):
         try:
+            # Bug 2 fix: reject if already running
+            if self._is_bypass_running():
+                return {'error': 'Bypass already in progress'}
             self._bridge = self._get_bridge()
+            with self._status_lock:
+                self._status = {'step': 'starting', 'state': 'Initializing...', 'progress': 0}
             self._bypass_thread = threading.Thread(
-                target=self._bridge.connect_and_erase_frp,
+                target=self._run_bypass,
                 daemon=True
             )
             self._bypass_thread.start()
@@ -81,6 +115,8 @@ class Api:
         try:
             if self._bridge:
                 self._bridge.cancel()
+                with self._status_lock:
+                    self._status = {'step': 'cancelled', 'state': 'Cancelled by user', 'progress': 0}
             return {'status': 'cancelled'}
         except Exception as e:
             return {'error': str(e)}
@@ -89,13 +125,16 @@ class Api:
         try:
             if self._bridge:
                 return self._bridge.get_device_info()
-            return None
+            # Bug 3 fix: return empty dict instead of None
+            return {'error': 'No active connection', 'chipset': None, 'port': None}
         except Exception as e:
             return {'error': str(e)}
 
     def get_bypass_status(self):
         try:
-            return {'step': 'idle', 'state': 'idle', 'progress': 0}
+            # Bug 1 fix: return actual tracked status instead of hardcoded idle
+            with self._status_lock:
+                return dict(self._status)
         except Exception as e:
             return {'error': str(e)}
 
