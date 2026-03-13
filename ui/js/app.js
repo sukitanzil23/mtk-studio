@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="flex-1 flex overflow-hidden">
 
           <!-- Scrollable page content -->
-          <main class="flex-1 overflow-y-auto p-8 bg-slate-50" id="page-content">
+          <main class="flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50" id="page-content">
             <div class="flex items-center justify-center h-full text-slate-400">Loading...</div>
           </main>
 
