@@ -1,29 +1,29 @@
-<div class="p-8 max-w-4xl mx-auto">
+<div id="frp-page-root" class="flex flex-col flex-1 min-h-0 p-6">
 
-  <!-- Page Title -->
-  <div class="mb-6">
-    <h2 class="text-3xl font-black tracking-tight text-slate-900">FRP Bypass</h2>
-    <p class="text-slate-500 mt-1">Remove Factory Reset Protection from MediaTek devices</p>
+  <!-- Page Title - compact -->
+  <div class="mb-4 flex-shrink-0">
+    <h2 class="text-2xl font-black tracking-tight text-slate-900">FRP Bypass</h2>
+    <p class="text-slate-500 text-sm mt-0.5">Remove Factory Reset Protection from MediaTek devices</p>
   </div>
 
   <!-- Stepper Bar (rendered by stepper.js) -->
-  <div id="stepper-bar" class="flex items-start mb-8"></div>
+  <div id="stepper-bar" class="flex items-start mb-4 flex-shrink-0"></div>
 
   <!-- ============================================================ -->
   <!-- STEP 1: Setup / System Readiness Check                       -->
   <!-- ============================================================ -->
   <div class="step-panel active" data-step="1">
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-8">
-      <div class="flex items-center gap-3 mb-1">
-        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-        <h3 class="font-bold text-lg text-slate-900">System Readiness Check</h3>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col flex-1 min-h-0">
+      <div class="flex items-center gap-3 mb-1 flex-shrink-0">
+        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        <h3 class="font-bold text-base text-slate-900">System Readiness Check</h3>
       </div>
-      <p class="text-sm text-slate-500 mb-6 ml-9">Ensuring all components are ready for the bypass process</p>
+      <p class="text-sm text-slate-500 mb-4 ml-8 flex-shrink-0">Ensuring all components are ready for the bypass process</p>
 
       <!-- Check items -->
-      <div class="space-y-4 mb-8">
+      <div class="space-y-3 mb-auto flex-shrink-0">
         <!-- USB Driver -->
-        <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+        <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
           <div id="check-driver" class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 shrink-0 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           </div>
@@ -35,7 +35,7 @@
         </div>
 
         <!-- Device Connection -->
-        <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+        <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
           <div id="check-device" class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 shrink-0 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           </div>
@@ -47,7 +47,7 @@
         </div>
 
         <!-- mtkclient -->
-        <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+        <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
           <div id="check-mtkclient" class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 shrink-0 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           </div>
@@ -60,13 +60,14 @@
       </div>
 
       <!-- Begin Setup Button -->
-      <button id="btn-begin-setup" onclick="startBypass()"
-              class="w-full h-[52px] bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:opacity-90 text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        Begin Setup
-      </button>
-
-      <p class="text-xs text-slate-400 text-center mt-3">Make sure Zadig USB driver is installed before proceeding</p>
+      <div class="mt-4 flex-shrink-0">
+        <button id="btn-begin-setup" onclick="startBypass()"
+                class="w-full h-[48px] bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:opacity-90 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Begin Setup
+        </button>
+        <p class="text-xs text-slate-400 text-center mt-2">Make sure Zadig USB driver is installed before proceeding</p>
+      </div>
     </div>
   </div>
 
@@ -74,38 +75,38 @@
   <!-- STEP 2: Connect Device / BROM Mode                           -->
   <!-- ============================================================ -->
   <div class="step-panel" data-step="2">
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-8">
-      <div class="flex items-center gap-3 mb-1">
-        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-        <h3 class="font-bold text-lg text-slate-900">Enter BROM Mode</h3>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col flex-1 min-h-0">
+      <div class="flex items-center gap-3 mb-1 flex-shrink-0">
+        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+        <h3 class="font-bold text-base text-slate-900">Enter BROM Mode</h3>
       </div>
-      <p class="text-sm text-slate-500 mb-6 ml-9">Follow these steps to enter BROM mode for the bypass protocol</p>
+      <p class="text-sm text-slate-500 mb-4 ml-8 flex-shrink-0">Follow these steps to enter BROM mode for the bypass protocol</p>
 
       <!-- Instruction Steps -->
-      <div class="space-y-5 mb-8">
+      <div class="space-y-4 mb-auto flex-shrink-0">
         <div class="flex gap-4">
-          <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 text-sm font-bold">1</div>
+          <div class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 text-sm font-bold">1</div>
           <div>
             <p class="text-sm font-bold text-slate-900">Power off your device completely</p>
             <p class="text-xs text-slate-500 mt-0.5">Hold the power button until the screen goes black</p>
           </div>
         </div>
         <div class="flex gap-4">
-          <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 text-sm font-bold">2</div>
+          <div class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 text-sm font-bold">2</div>
           <div>
             <p class="text-sm font-bold text-slate-900">Press and hold Volume Down button</p>
             <p class="text-xs text-slate-500 mt-0.5">Keep the button held down firmly</p>
           </div>
         </div>
         <div class="flex gap-4">
-          <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 text-sm font-bold">3</div>
+          <div class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 text-sm font-bold">3</div>
           <div>
             <p class="text-sm font-bold text-slate-900">While holding Vol Down, connect USB cable to PC</p>
             <p class="text-xs text-slate-500 mt-0.5">Connect the device to your computer via USB</p>
           </div>
         </div>
         <div class="flex gap-4">
-          <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 text-sm font-bold">4</div>
+          <div class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 text-sm font-bold">4</div>
           <div>
             <p class="text-sm font-bold text-slate-900">Release after 3 seconds</p>
             <p class="text-xs text-slate-500 mt-0.5">Device enters BROM mode automatically</p>
@@ -114,7 +115,7 @@
       </div>
 
       <!-- Waiting Indicator -->
-      <div id="brom-waiting" class="flex items-center justify-center gap-3 py-4 mb-6 bg-blue-50 rounded-xl border border-blue-100">
+      <div id="brom-waiting" class="flex items-center justify-center gap-3 py-3 mb-4 bg-blue-50 rounded-xl border border-blue-100 flex-shrink-0">
         <svg class="w-5 h-5 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -123,19 +124,17 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex gap-3">
+      <div class="flex gap-3 flex-shrink-0">
         <button id="btn-ready" onclick="Stepper.goToStep(3)"
-                class="flex-1 h-[52px] bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:opacity-90 text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
+                class="flex-1 h-[48px] bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:opacity-90 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
           I'm Ready
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
         </button>
         <button onclick="cancelBypass()"
-                class="px-6 h-[52px] bg-white text-slate-700 rounded-xl font-bold text-sm border border-slate-200 hover:bg-slate-50 transition-colors">
+                class="px-5 h-[48px] bg-white text-slate-700 rounded-xl font-bold text-sm border border-slate-200 hover:bg-slate-50 transition-colors">
           Cancel
         </button>
       </div>
-
-      <p class="text-xs text-slate-400 text-center mt-3">Having trouble? Check driver setup in Settings</p>
     </div>
   </div>
 
@@ -144,45 +143,40 @@
   <!-- ============================================================ -->
   <div class="step-panel" data-step="3">
     <!-- Success Banner -->
-    <div class="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 flex items-center gap-3 mb-4">
-      <div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+    <div class="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2.5 flex items-center gap-3 mb-3 flex-shrink-0">
+      <div class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
       </div>
       <p class="text-emerald-800 font-semibold text-sm">Device connected successfully!</p>
     </div>
 
     <!-- Device Info Card -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-      <div class="bg-slate-50 border-b border-slate-200 px-8 py-4 flex items-center gap-2">
-        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
+      <div class="bg-slate-50 border-b border-slate-200 px-6 py-3 flex items-center gap-2 flex-shrink-0">
+        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
         <h3 class="font-bold uppercase text-xs tracking-widest text-slate-700">Device Hardware Information</h3>
       </div>
-      <div class="p-8">
-        <div class="grid grid-cols-2 gap-x-12 gap-y-6">
-          <!-- Chipset -->
+      <div class="p-6 flex-1">
+        <div class="grid grid-cols-2 gap-x-10 gap-y-4">
           <div>
             <p class="text-xs text-slate-500 uppercase font-bold tracking-tight">Chipset</p>
-            <p id="device-chipset" class="text-base font-semibold mt-1">Detecting...</p>
+            <p id="device-chipset" class="text-sm font-semibold mt-1">Detecting...</p>
           </div>
-          <!-- Description -->
           <div>
             <p class="text-xs text-slate-500 uppercase font-bold tracking-tight">Description</p>
-            <p id="device-description" class="text-base font-semibold mt-1">--</p>
+            <p id="device-description" class="text-sm font-semibold mt-1">--</p>
           </div>
-          <!-- HW Code -->
           <div>
             <p class="text-xs text-slate-500 uppercase font-bold tracking-tight">HW Code</p>
-            <p id="device-hwcode" class="text-base font-semibold mt-1">--</p>
+            <p id="device-hwcode" class="text-sm font-semibold mt-1">--</p>
           </div>
-          <!-- Boot Mode -->
           <div>
             <p class="text-xs text-slate-500 uppercase font-bold tracking-tight">Boot Mode</p>
             <div class="flex items-center gap-2 mt-1">
-              <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-              <p id="device-boot-mode" class="text-base font-semibold">--</p>
+              <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+              <p id="device-boot-mode" class="text-sm font-semibold">--</p>
             </div>
           </div>
-          <!-- Security Status -->
           <div class="col-span-2">
             <p class="text-xs text-slate-500 uppercase font-bold tracking-tight">Security Status</p>
             <div class="mt-1">
@@ -196,15 +190,15 @@
       </div>
 
       <!-- CTA -->
-      <div class="px-8 pb-8">
+      <div class="px-6 pb-6 flex-shrink-0">
         <div class="flex gap-3">
           <button id="btn-remove-frp" onclick="startFrpRemoval()"
-                  class="flex-1 h-[60px] bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:opacity-90 text-white rounded-xl font-bold text-[18px] flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+                  class="flex-1 h-[52px] bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:opacity-90 text-white rounded-xl font-bold text-base flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
             Remove FRP Lock
           </button>
           <button onclick="cancelBypass()"
-                  class="px-6 h-[60px] bg-white text-slate-700 rounded-xl font-bold text-sm border border-slate-200 hover:bg-slate-50 transition-colors">
+                  class="px-5 h-[52px] bg-white text-slate-700 rounded-xl font-bold text-sm border border-slate-200 hover:bg-slate-50 transition-colors">
             Cancel
           </button>
         </div>
@@ -216,44 +210,44 @@
   <!-- STEP 4: Bypass in Progress                                   -->
   <!-- ============================================================ -->
   <div class="step-panel" data-step="4">
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-8">
-      <div class="flex items-center gap-3 mb-1">
-        <svg class="w-6 h-6 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col flex-1 min-h-0">
+      <div class="flex items-center gap-3 mb-1 flex-shrink-0">
+        <svg class="w-5 h-5 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
         </svg>
-        <h3 class="font-bold text-lg text-slate-900">FRP Bypass in Progress</h3>
+        <h3 class="font-bold text-base text-slate-900">FRP Bypass in Progress</h3>
       </div>
-      <p class="text-sm text-slate-500 mb-6 ml-9">Wait for the operation to complete</p>
+      <p class="text-sm text-slate-500 mb-4 ml-8 flex-shrink-0">Wait for the operation to complete</p>
 
       <!-- Progress Bar -->
-      <div class="mb-6">
+      <div class="mb-4 flex-shrink-0">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-bold uppercase tracking-widest text-slate-500">Progress</span>
           <span id="progress-pct" class="text-sm font-bold text-slate-700">0%</span>
         </div>
-        <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-          <div id="progress-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+        <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+          <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
         </div>
       </div>
 
-      <!-- Operation Log -->
-      <div class="mb-6">
-        <p class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Operation Log</p>
-        <div id="operation-log" class="max-h-48 overflow-y-auto border border-slate-100 rounded-xl bg-slate-50 p-4 space-y-0">
+      <!-- Operation Log - this IS the scrollable area in step 4 -->
+      <div class="mb-4 flex-1 min-h-0 flex flex-col">
+        <p class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 flex-shrink-0">Operation Log</p>
+        <div id="operation-log" class="flex-1 min-h-0 overflow-y-auto border border-slate-100 rounded-xl bg-slate-50 p-3 space-y-0">
           <div class="text-xs text-slate-400 py-1">Waiting for operations...</div>
         </div>
       </div>
 
       <!-- Warning -->
-      <div class="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl mb-6">
-        <svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+      <div class="flex items-center gap-3 p-2.5 bg-amber-50 border border-amber-200 rounded-xl mb-4 flex-shrink-0">
+        <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
         <p class="text-xs font-semibold text-amber-800">Do not disconnect the device during operation</p>
       </div>
 
       <!-- Cancel Button -->
       <button onclick="cancelBypass()"
-              class="w-full h-[44px] bg-white text-red-600 rounded-xl font-bold text-sm border border-red-200 hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
+              class="w-full h-[40px] bg-white text-red-600 rounded-xl font-bold text-sm border border-red-200 hover:bg-red-50 transition-colors flex items-center justify-center gap-2 flex-shrink-0">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         Cancel Operation
       </button>
@@ -264,22 +258,22 @@
   <!-- STEP 5: Done / Success                                       -->
   <!-- ============================================================ -->
   <div class="step-panel" data-step="5">
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 text-center flex flex-col flex-1 min-h-0 items-center justify-center">
       <!-- Hero Checkmark -->
-      <div class="flex justify-center mb-6">
-        <div class="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center">
-          <svg class="w-12 h-12 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="flex justify-center mb-5">
+        <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
+          <svg class="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
           </svg>
         </div>
       </div>
 
-      <h3 class="text-2xl font-black text-slate-900 mb-2">FRP Bypass Complete!</h3>
-      <p class="text-slate-500 mb-8">Your device is now free from FRP verification lock</p>
+      <h3 class="text-xl font-black text-slate-900 mb-1.5">FRP Bypass Complete!</h3>
+      <p class="text-slate-500 text-sm mb-6">Your device is now free from FRP verification lock</p>
 
       <!-- Summary Card -->
-      <div class="bg-slate-50 rounded-xl border border-slate-200 p-6 max-w-sm mx-auto mb-8 text-left">
-        <div class="space-y-3">
+      <div class="bg-slate-50 rounded-xl border border-slate-200 p-5 max-w-sm w-full mb-6 text-left">
+        <div class="space-y-2.5">
           <div class="flex justify-between items-center">
             <span class="text-xs text-slate-500 uppercase font-bold tracking-tight">Device</span>
             <span id="done-device" class="text-sm font-semibold text-slate-900">MT6765 (Helio P35)</span>
@@ -301,9 +295,9 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex flex-col items-center gap-3">
+      <div class="flex flex-col items-center gap-2 w-full max-w-sm">
         <button onclick="resetWizard()"
-                class="w-full max-w-sm h-[52px] bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:opacity-90 text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
+                class="w-full h-[48px] bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:opacity-90 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           Start New Session
         </button>
@@ -314,8 +308,6 @@
       </div>
     </div>
   </div>
-
-
 
 </div>
 
@@ -361,15 +353,12 @@ function resetWizard() {
     Stepper.reset();
     Stepper.goToStep(1);
   }
-  // Reset progress bar
   var bar = document.getElementById('progress-bar');
   var pct = document.getElementById('progress-pct');
   if (bar) bar.style.width = '0%';
   if (pct) pct.textContent = '0%';
-  // Clear operation log
   var opLog = document.getElementById('operation-log');
   if (opLog) opLog.innerHTML = '<div class="text-xs text-slate-400 py-1">Waiting for operations...</div>';
-  // Reset check items
   ['driver', 'device', 'mtkclient'].forEach(function(name) {
     var el = document.getElementById('check-' + name);
     if (el) {
@@ -381,7 +370,6 @@ function resetWizard() {
       badge.className = 'text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full';
     }
   });
-  // Reset device info
   var el = function(id) { return document.getElementById(id); };
   if (el('device-chipset')) el('device-chipset').textContent = 'Detecting...';
   if (el('device-description')) el('device-description').textContent = '--';
@@ -400,7 +388,6 @@ function updateFooterStatus(text) {
 
 // --- Event Listeners ---
 
-// Device detected event -> fill device info card
 window.addEventListener('deviceDetected', function(e) {
   var info = e.detail;
   var el = function(id) { return document.getElementById(id); };
@@ -412,37 +399,28 @@ window.addEventListener('deviceDetected', function(e) {
   if (el('done-device')) el('done-device').textContent = (info.chipset || '?') + ' (' + (info.description || '?') + ')';
 });
 
-// --- Override updateStatus for device cards & check items ---
-
 window.updateStatus = function(status) {
-  // Route to correct step
   if (status.step && window.Stepper) {
     var map = { setup: 1, connect: 2, detect: 3, bypass: 4, done: 5 };
     var n = map[status.step];
     if (n) window.Stepper.goToStep(n);
   }
-  // Dispatch device info
   if (status.device) {
     window.dispatchEvent(new CustomEvent('deviceDetected', { detail: status.device }));
   }
-  // Show errors as toast with retry
   if (status.error) {
     window.showToast('error', status.error, function() { startBypass(); });
   }
-  // Mark step complete when done
   if (status.step === 'done' && window.Stepper) {
     window.Stepper.completeStep(4);
     if (window.Console) window.Console.addSessionEnd();
   }
-
-  // Update readiness check items (step 1)
   if (status.checks) {
     ['driver', 'device', 'mtkclient'].forEach(function(name) {
       var checkStatus = status.checks[name];
       var el = document.getElementById('check-' + name);
       var badge = document.getElementById('check-' + name + '-badge');
       if (!el || !badge) return;
-
       if (checkStatus === 'ready' || checkStatus === true) {
         el.className = 'w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0 transition-colors';
         badge.textContent = 'Ready';
@@ -454,8 +432,6 @@ window.updateStatus = function(status) {
       }
     });
   }
-
-  // Mark all checks ready when step is 'setup' (simple fallback)
   if (status.step === 'setup') {
     ['driver', 'device', 'mtkclient'].forEach(function(name) {
       var el = document.getElementById('check-' + name);
@@ -467,8 +443,6 @@ window.updateStatus = function(status) {
       }
     });
   }
-
-  // Update footer status per step (use Python state if available, fallback to map)
   if (status.state) {
     updateFooterStatus(status.state);
   } else if (status.step) {
@@ -491,7 +465,6 @@ function initStepper() {
   if (window.Stepper) {
     window.Stepper.init();
   }
-  // Count existing console entries
   var consoleLog = document.getElementById('console-log');
   if (consoleLog) {
     _consoleEntryCount = consoleLog.children.length;
@@ -511,7 +484,6 @@ window.clearLogs = clearLogs;
 window.scrollToConsole = scrollToConsole;
 window.updateEntryCount = updateEntryCount;
 
-// Auto-init if stepper is already loaded
 if (window.Stepper) {
   window.Stepper.init();
 }
