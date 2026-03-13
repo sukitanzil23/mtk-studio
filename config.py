@@ -11,6 +11,7 @@ class AppConfig:
     DEFAULTS = {
         'mock_mode': False,
         'last_port': None,
+        'da_path': None,            # custom DA loader file path (optional)
         'operation_history': [],
     }
 
