@@ -17,7 +17,7 @@ class MockBridge:
         'family': 'helio',
     }
 
-    LOG_MESSAGES = [
+    FRP_LOG_MESSAGES = [
         '[INFO] Initializing mtkclient...',
         '[INFO] Scanning for USB devices...',
         '[INFO] MediaTek device found (VID=0x0E8D PID=0x0003)',
@@ -33,13 +33,37 @@ class MockBridge:
         '[SUCCESS] FRP lock removed. Device will boot without Google account.',
     ]
 
+    MOCK_PARTITIONS = [
+        {'index': 0,  'name': 'preloader', 'sector': 0,          'size_human': '256 KB',  'type': 'raw'},
+        {'index': 1,  'name': 'proinfo',   'sector': 512,        'size_human': '256 KB',  'type': 'raw'},
+        {'index': 2,  'name': 'nvram',     'sector': 1024,       'size_human': '512 KB',  'type': 'raw'},
+        {'index': 3,  'name': 'protect1',  'sector': 2048,       'size_human': '10 MB',   'type': 'ext4'},
+        {'index': 4,  'name': 'protect2',  'sector': 22528,      'size_human': '10 MB',   'type': 'ext4'},
+        {'index': 5,  'name': 'lk',        'sector': 43008,      'size_human': '512 KB',  'type': 'raw'},
+        {'index': 6,  'name': 'para',      'sector': 44032,      'size_human': '512 KB',  'type': 'raw'},
+        {'index': 7,  'name': 'boot',      'sector': 45056,      'size_human': '32 MB',   'type': 'raw'},
+        {'index': 8,  'name': 'recovery',  'sector': 110592,     'size_human': '32 MB',   'type': 'raw'},
+        {'index': 9,  'name': 'vbmeta',    'sector': 176128,     'size_human': '64 KB',   'type': 'raw'},
+        {'index': 10, 'name': 'metadata',  'sector': 176256,     'size_human': '16 MB',   'type': 'ext4'},
+        {'index': 11, 'name': 'frp',       'sector': 209024,     'size_human': '256 KB',  'type': 'raw'},
+        {'index': 12, 'name': 'super',     'sector': 209536,     'size_human': '4 GB',    'type': 'raw'},
+        {'index': 13, 'name': 'userdata',  'sector': 8598144,    'size_human': '54 GB',   'type': 'ext4'},
+    ]
+
     def __init__(self, on_log, on_progress, on_status):
         self.on_log = on_log
         self.on_progress = on_progress
         self.on_status = on_status
         self.cancelled = False
 
-    def connect_and_erase_frp(self):
+    # ------------------------------------------------------------------
+    # Phase 1: Detection only  (setup -> connect -> detect -> STOP)
+    # Called by api.start_frp_bypass().  Reaches step 3 then pauses so
+    # the user can choose an operation.
+    # ------------------------------------------------------------------
+
+    def connect_and_detect(self):
+        """Run setup + connect + detect phases, then STOP at step 3."""
         self.cancelled = False
 
         # Step 1: Setup
@@ -63,204 +87,109 @@ class MockBridge:
         if self.cancelled:
             return
 
-        # Step 3: Detect
+        # Step 3: Detect -- emit device info and STOP here
         device = self.MOCK_DEVICE.copy()
         self.on_status({'step': 'detect', 'state': 'Device detected', 'device': device})
         self.on_log(f'[INFO] Chipset: {device["chipset"]} ({device["description"]})')
         self.on_log(f'[INFO] HW Code: {device["hwcode"]} | Boot mode: BROM')
-        time.sleep(1)
+        # DO NOT proceed to bypass -- wait for user to pick an operation
 
-        if self.cancelled:
-            return
+    # ------------------------------------------------------------------
+    # Phase 2 operations -- each called separately after user picks one
+    # ------------------------------------------------------------------
 
-        # Step 4: Bypass -- 5% simulated failure for error handling testing
+    def erase_frp(self):
+        """Erase FRP partition only (step 4 -> step 5)."""
+        self.cancelled = False
+
+        # 5% simulated failure for error handling testing
         if random.random() < 0.05:
             self.on_status({'step': 'bypass', 'state': 'Error', 'error': 'Simulated USB disconnect during bypass'})
             self.on_log('[ERROR] USB connection lost during bypass. Retry to continue.')
             return
 
         self.on_status({'step': 'bypass', 'state': 'FRP bypass in progress...'})
-        total = len(self.LOG_MESSAGES)
-        for i, msg in enumerate(self.LOG_MESSAGES):
+        for i, msg in enumerate(self.FRP_LOG_MESSAGES):
             if self.cancelled:
                 return
             self.on_log(msg)
-            self.on_progress(int((i + 1) / total * 100))
-            time.sleep(1.1)
-
-        if self.cancelled:
-            return
+            progress = int((i + 1) / len(self.FRP_LOG_MESSAGES) * 100)
+            self.on_progress(progress)
+            time.sleep(random.uniform(0.4, 1.2))
 
         # Step 5: Done
-        self.on_progress(100)
-        self.on_status({'step': 'done', 'state': 'Operation completed successfully', 'device': device})
+        self.on_status({'step': 'done', 'state': 'FRP bypass complete'})
+        self.on_log('[SUCCESS] FRP bypass finished -- device is now unlocked.')
 
-    # ------------------------------------------------------------------
-    # Factory Reset + FRP (mock)
-    # ------------------------------------------------------------------
-
-    FACTORY_RESET_LOGS = [
-        '[INFO] Initializing mtkclient for factory reset...',
-        '[INFO] Using built-in DA loaders',
-        '[INFO] mtkclient v2 engine ready',
-        '[INFO] Waiting for device... Hold Vol-Down + Power, then plug USB',
-        '[INFO] Device detected on COM3',
-        '[INFO] Identifying chipset and uploading Download Agent...',
-        '[INFO] Download Agent uploaded successfully',
-        '[INFO] Reading GPT partition table...',
-        '[INFO] Partitions to erase: userdata, cache, frp, persist',
-        '[INFO] Erasing userdata partition... (1/4)',
-        '[SUCCESS] userdata partition erased',
-        '[INFO] Erasing cache partition... (2/4)',
-        '[SUCCESS] cache partition erased',
-        '[INFO] Erasing frp partition... (3/4)',
-        '[SUCCESS] frp partition erased',
-        '[INFO] Erasing persist partition... (4/4)',
-        '[SUCCESS] persist partition erased',
-        '[INFO] Resetting device...',
-        '[SUCCESS] Reset command sent. Disconnect USB cable.',
-        '[SUCCESS] Factory reset + FRP removal complete. Device wiped.',
-    ]
-
-    def connect_and_factory_reset_frp(self):
+    def factory_reset(self):
+        """Simulate full factory reset (erase userdata + cache + frp)."""
         self.cancelled = False
-        device = self.MOCK_DEVICE.copy()
-
-        # Setup
-        self.on_status({'step': 'setup', 'state': 'Initializing mtkclient...'})
-        self.on_log('[INFO] Initializing mtkclient for factory reset...')
-        time.sleep(0.8)
-        self.on_progress(5)
-
-        if self.cancelled:
-            return
-
-        # Connect
-        self.on_status({'step': 'connect', 'state': 'Waiting for device in BROM mode...'})
-        self.on_log('[INFO] Waiting for device...')
-        time.sleep(2)
-        self.on_log('[INFO] Device detected on COM3')
-        self.on_progress(20)
-
-        if self.cancelled:
-            return
-
-        # Detect
-        self.on_status({'step': 'detect', 'state': 'Device detected', 'device': device})
-        self.on_log(f'[INFO] Chipset: {device["chipset"]} ({device["description"]})')
-        time.sleep(1)
-        self.on_progress(40)
-
-        if self.cancelled:
-            return
-
-        # Factory erase
         self.on_status({'step': 'bypass', 'state': 'Factory reset in progress...'})
-        partitions = ['userdata', 'cache', 'frp', 'persist']
-        for i, part in enumerate(partitions):
+
+        messages = [
+            '[INFO] Starting factory reset...',
+            '[INFO] Erasing userdata partition...',
+            '[INFO] Erasing cache partition...',
+            '[INFO] Wiping frp partition...',
+            '[SUCCESS] All partitions wiped',
+            '[INFO] Rebooting device...',
+            '[SUCCESS] Factory reset complete. Device will reboot to setup wizard.',
+        ]
+
+        for i, msg in enumerate(messages):
             if self.cancelled:
                 return
-            pct = 45 + int((i / len(partitions)) * 40)
-            self.on_progress(pct)
-            self.on_log(f'[INFO] Erasing {part} partition... ({i+1}/{len(partitions)})')
-            time.sleep(1.5)
-            self.on_log(f'[SUCCESS] {part} partition erased')
-            time.sleep(0.3)
+            self.on_log(msg)
+            progress = int((i + 1) / len(messages) * 100)
+            self.on_progress(progress)
+            time.sleep(random.uniform(0.5, 1.5))
 
-        self.on_progress(90)
-
-        # Reset
-        self.on_log('[INFO] Resetting device...')
-        time.sleep(0.5)
-        self.on_log('[SUCCESS] Reset command sent. Disconnect USB cable.')
-        self.on_progress(100)
-        self.on_status({
-            'step': 'done',
-            'state': 'Factory reset completed successfully',
-            'device': device
-        })
-        self.on_log('[SUCCESS] Factory reset + FRP removal complete. Device wiped.')
-
-    # ------------------------------------------------------------------
-    # Read Partitions (mock)
-    # ------------------------------------------------------------------
-
-    MOCK_PARTITIONS = [
-        {'name': 'boot',       'sector': 2048,     'sectors': 65536,   'size_bytes': 33554432,  'size_human': '32.0 MB'},
-        {'name': 'recovery',   'sector': 67584,    'sectors': 65536,   'size_bytes': 33554432,  'size_human': '32.0 MB'},
-        {'name': 'lk',         'sector': 133120,   'sectors': 2048,    'size_bytes': 1048576,   'size_human': '1.0 MB'},
-        {'name': 'lk2',        'sector': 135168,   'sectors': 2048,    'size_bytes': 1048576,   'size_human': '1.0 MB'},
-        {'name': 'para',       'sector': 137216,   'sectors': 1024,    'size_bytes': 524288,    'size_human': '512.0 KB'},
-        {'name': 'misc',       'sector': 138240,   'sectors': 1024,    'size_bytes': 524288,    'size_human': '512.0 KB'},
-        {'name': 'expdb',      'sector': 139264,   'sectors': 20480,   'size_bytes': 10485760,  'size_human': '10.0 MB'},
-        {'name': 'frp',        'sector': 159744,   'sectors': 512,     'size_bytes': 262144,    'size_human': '256.0 KB'},
-        {'name': 'persist',    'sector': 160256,   'sectors': 6144,    'size_bytes': 3145728,   'size_human': '3.0 MB'},
-        {'name': 'nvdata',     'sector': 166400,   'sectors': 65536,   'size_bytes': 33554432,  'size_human': '32.0 MB'},
-        {'name': 'metadata',   'sector': 231936,   'sectors': 65536,   'size_bytes': 33554432,  'size_human': '32.0 MB'},
-        {'name': 'protect1',   'sector': 297472,   'sectors': 20480,   'size_bytes': 10485760,  'size_human': '10.0 MB'},
-        {'name': 'protect2',   'sector': 317952,   'sectors': 20480,   'size_bytes': 10485760,  'size_human': '10.0 MB'},
-        {'name': 'seccfg',     'sector': 338432,   'sectors': 1024,    'size_bytes': 524288,    'size_human': '512.0 KB'},
-        {'name': 'system',     'sector': 339456,   'sectors': 6291456, 'size_bytes': 3221225472,'size_human': '3.0 GB'},
-        {'name': 'vendor',     'sector': 6630912,  'sectors': 1048576, 'size_bytes': 536870912, 'size_human': '512.0 MB'},
-        {'name': 'cache',      'sector': 7679488,  'sectors': 524288,  'size_bytes': 268435456, 'size_human': '256.0 MB'},
-        {'name': 'userdata',   'sector': 8203776,  'sectors': 52428800,'size_bytes': 26843545600,'size_human': '25.0 GB'},
-    ]
+        self.on_status({'step': 'done', 'state': 'Factory reset complete'})
 
     def read_partitions(self):
+        """Simulate GPT partition read and emit partition table."""
         self.cancelled = False
-        device = self.MOCK_DEVICE.copy()
-
-        # Setup
-        self.on_status({'step': 'setup', 'state': 'Initializing mtkclient...'})
-        self.on_log('[INFO] Initializing mtkclient for partition read...')
-        time.sleep(0.5)
-        self.on_progress(10)
-
-        if self.cancelled:
-            return {'error': 'Cancelled'}
-
-        # Connect
-        self.on_status({'step': 'connect', 'state': 'Waiting for device in BROM mode...'})
-        self.on_log('[INFO] Waiting for device...')
-        time.sleep(1.5)
-        self.on_log('[INFO] Device detected on COM3')
-        self.on_progress(30)
-
-        if self.cancelled:
-            return {'error': 'Cancelled'}
-
-        # Detect + DA
-        self.on_status({'step': 'detect', 'state': 'Uploading DA...', 'device': device})
-        self.on_log(f'[INFO] Chipset: {device["chipset"]}')
-        time.sleep(0.8)
-        self.on_progress(50)
-
-        # Read GPT
         self.on_status({'step': 'bypass', 'state': 'Reading partition table...'})
-        self.on_log('[INFO] Reading GPT partition table...')
-        time.sleep(1)
-        self.on_progress(60)
 
-        for p in self.MOCK_PARTITIONS:
-            self.on_log(f'  {p["name"]}: sector={p["sector"]}, size={p["size_human"]}')
-            time.sleep(0.1)
+        self.on_log('[INFO] Sending GPT read command...')
+        time.sleep(0.8)
+        self.on_log('[INFO] Reading GPT header...')
+        self.on_progress(20)
+        time.sleep(0.6)
+        self.on_log('[INFO] Parsing partition entries...')
+        self.on_progress(50)
+        time.sleep(0.8)
 
-        self.on_progress(90)
+        partitions = self.MOCK_PARTITIONS
+        for i, p in enumerate(partitions):
+            if self.cancelled:
+                return
+            self.on_log(f'  [{p["index"]:2d}] {p["name"]:<16s} sector {p["sector"]:<10d} {p["size_human"]}')
+            self.on_progress(50 + int((i + 1) / len(partitions) * 50))
+            time.sleep(0.08)
 
-        # Done
-        self.on_log('[INFO] Device disconnected cleanly.')
-        time.sleep(0.3)
-        self.on_progress(100)
+        self.on_log(f'[SUCCESS] {len(partitions)} partitions read successfully.')
         self.on_status({
             'step': 'done',
-            'state': f'Read {len(self.MOCK_PARTITIONS)} partitions successfully',
-            'device': device
+            'state': 'Partition read complete',
+            'partitions': partitions
         })
-        self.on_log(f'[SUCCESS] Found {len(self.MOCK_PARTITIONS)} partitions.')
-        return {'partitions': self.MOCK_PARTITIONS, 'count': len(self.MOCK_PARTITIONS)}
+
+    # ------------------------------------------------------------------
+    # Legacy: connect_and_erase_frp kept for backward compat but now
+    # just chains detect + erase_frp
+    # ------------------------------------------------------------------
+
+    def connect_and_erase_frp(self):
+        """Full flow for legacy callers: detect then immediately erase FRP."""
+        self.connect_and_detect()
+        if not self.cancelled:
+            time.sleep(1)
+            self.erase_frp()
+
+    def get_device_info(self):
+        """Return MOCK_DEVICE dict immediately."""
+        return self.MOCK_DEVICE.copy()
 
     def cancel(self):
         self.cancelled = True
-
-    def get_device_info(self):
-        return self.MOCK_DEVICE.copy()
