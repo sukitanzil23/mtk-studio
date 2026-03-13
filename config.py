@@ -21,14 +21,16 @@ class AppConfig:
         return self._data.get(key, self.DEFAULTS.get(key))
 
     def set(self, key, value):
-        if key == 'operation_history':
-            hist = self._data.get('operation_history', [])
-            hist.append(value)
-            if len(hist) > self.MAX_HISTORY:
-                hist = hist[-self.MAX_HISTORY:]
-            self._data['operation_history'] = hist
-        else:
-            self._data[key] = value
+        """Set a config value. For operation_history, use append_history() instead."""
+        self._data[key] = value
+
+    def append_history(self, entry):
+        """Append an operation record to history, enforcing MAX_HISTORY cap."""
+        hist = self._data.get('operation_history', [])
+        hist.append(entry)
+        if len(hist) > self.MAX_HISTORY:
+            hist = hist[-self.MAX_HISTORY:]
+        self._data['operation_history'] = hist
 
     def load(self):
         try:
