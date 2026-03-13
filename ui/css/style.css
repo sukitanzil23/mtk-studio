@@ -16,15 +16,13 @@ body {
   display: block;
 }
 
-/* ============================================================
+/* ================================================================
    Console Sidebar - Glassmorphism Dark Panel
-   ============================================================ */
+   ================================================================ */
 
 #console-sidebar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  /* FIX: removed position:fixed -- sidebar stays in flex flow
+     so it PUSHES content instead of overlapping it */
   width: 320px;
   z-index: 40;
   background: rgba(15, 23, 42, 0.92);
@@ -33,25 +31,15 @@ body {
   border-left: 1px solid rgba(255, 255, 255, 0.10);
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  transform: translateX(0);
+  flex-shrink: 0;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #console-sidebar.collapsed {
-  transform: translateX(100%);
-}
-
-#console-toggle-btn {
-  position: fixed;
-  right: 320px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 41;
-  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#main-wrapper {
-  transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 0;
+  overflow: hidden;
+  border-left-color: transparent;
 }
 
 #console-log {
